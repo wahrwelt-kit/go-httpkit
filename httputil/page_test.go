@@ -53,6 +53,7 @@ func TestClampPerPage(t *testing.T) {
 		{&five, 10, 100, 5},
 		{&ten, 10, 100, 10},
 		{&ten, 5, 8, 8},
+		{nil, 200, 100, 100},
 	}
 	for _, tt := range tests {
 		got := ClampPerPage(tt.p, tt.defaultVal, tt.maxVal)

@@ -61,6 +61,19 @@ func TestDecodeAndValidate_ValidationError(t *testing.T) {
 	}
 }
 
+func TestDecodeAndValidate_NilRequest(t *testing.T) {
+	t.Parallel()
+	w := httptest.NewRecorder()
+	var v noopValidator
+	_, ok := DecodeAndValidate[struct{ X int }](w, nil, v)
+	if ok {
+		t.Error("expected false")
+	}
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("status = %d, want %d", w.Code, http.StatusBadRequest)
+	}
+}
+
 func TestDecodeAndValidate_Success(t *testing.T) {
 	t.Parallel()
 	body := bytes.NewReader([]byte(`{"x":42}`))

@@ -1,17 +1,20 @@
 package httputil
 
 import (
-	"fmt"
+	"errors"
 	"net/http"
 
 	"github.com/TakuyaYagam1/go-httpkit/httperr"
 )
 
-// ParseMultipartFormLimit parses multipart form with maxBodySize (MaxBytesReader) and maxMemory (ParseMultipartForm). On error writes response and returns false.
+// ParseMultipartFormLimit parses the multipart form with the given body size and memory limits. On error writes an error response and returns false.
 func ParseMultipartFormLimit(w http.ResponseWriter, r *http.Request, maxBodySize, maxMemory int64) bool {
+	if r.Body == nil {
+		r.Body = http.NoBody
+	}
 	r.Body = http.MaxBytesReader(w, r.Body, maxBodySize)
 	if err := r.ParseMultipartForm(maxMemory); err != nil {
-		HandleError(w, r, httperr.New(fmt.Errorf("failed to parse form: %w", err), http.StatusBadRequest, "VALIDATION_ERROR"))
+		HandleError(w, r, httperr.New(errors.New("invalid multipart form"), http.StatusBadRequest, "VALIDATION_ERROR"))
 		return false
 	}
 	return true

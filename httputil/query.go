@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-// ParseBoolQuery parses the query parameter key as a boolean. Accepts "1", "true", "yes" (true) and "0", "false", "no" (false).
+// ParseBoolQuery parses the query parameter key as a boolean. Accepts "1", "true", "yes" for true and "0", "false", "no" for false.
 // Returns (value, true) when valid, (false, false) when missing or invalid.
 func ParseBoolQuery(r *http.Request, key string) (bool, bool) {
 	q := strings.TrimSpace(strings.ToLower(r.URL.Query().Get(key)))
@@ -23,7 +23,7 @@ func ParseBoolQuery(r *http.Request, key string) (bool, bool) {
 	}
 }
 
-// ParseEnumQuery parses the query parameter key and returns it as T if it is in the allowed slice; otherwise ("", false).
+// ParseEnumQuery parses the query parameter key and returns it as T if it is in allowed; otherwise returns ("", false).
 func ParseEnumQuery[T ~string](r *http.Request, key string, allowed []T) (T, bool) {
 	q := strings.TrimSpace(r.URL.Query().Get(key))
 	if q == "" {
@@ -38,7 +38,7 @@ func ParseEnumQuery[T ~string](r *http.Request, key string, allowed []T) (T, boo
 }
 
 // ParseSortQuery parses the "sort" query parameter. Supports "field", "-field", or "field:asc"/"field:desc".
-// Returns (field, dir, true) when the field is in allowedFields and dir is "asc" or "desc"; otherwise ("", "", false).
+// Returns (field, dir, true) when field is in allowedFields and dir is "asc" or "desc"; otherwise ("", "", false).
 func ParseSortQuery(r *http.Request, allowedFields []string) (field, dir string, ok bool) {
 	q := strings.TrimSpace(r.URL.Query().Get("sort"))
 	if q == "" {
@@ -68,7 +68,7 @@ func ParseSortQuery(r *http.Request, allowedFields []string) (field, dir string,
 	return field, dir, true
 }
 
-// ParseTimeQuery parses the query parameter key with the given time layout (e.g. time.RFC3339). Returns (zero, false) on missing or invalid value.
+// ParseTimeQuery parses the query parameter key with the given time layout (e.g. time.RFC3339). Returns (zero time.Time, false) on missing or invalid value.
 func ParseTimeQuery(r *http.Request, key, layout string) (time.Time, bool) {
 	q := strings.TrimSpace(r.URL.Query().Get(key))
 	if q == "" {

@@ -5,6 +5,45 @@ import (
 	"testing"
 )
 
+func TestParseTrustedProxyCIDRs(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name       string
+		cidrs      []string
+		wantErr    bool
+		wantNets   int
+		wantErrAny bool
+	}{
+		{"empty", nil, false, 0, false},
+		{"empty slice", []string{}, false, 0, false},
+		{"all invalid", []string{"bad", "10.0.0.0/33"}, true, 0, false},
+		{"one valid", []string{"10.0.0.0/8"}, false, 1, false},
+		{"mixed", []string{"bad", "10.0.0.0/8", "192.168.0.0/16"}, false, 2, true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			nets, err := ParseTrustedProxyCIDRs(tt.cidrs)
+			if tt.wantErr {
+				if err == nil {
+					t.Error("expected error")
+				}
+				return
+			}
+			if tt.wantErrAny {
+				if err == nil {
+					t.Error("expected error for invalid entries")
+				}
+			} else if err != nil {
+				t.Errorf("unexpected error: %v", err)
+				return
+			}
+			if tt.wantNets > 0 && len(nets) != tt.wantNets {
+				t.Errorf("len(nets) = %d, want %d", len(nets), tt.wantNets)
+			}
+		})
+	}
+}
+
 func TestGetClientIP(t *testing.T) {
 	t.Parallel()
 	tests := []struct {
@@ -20,7 +59,10 @@ func TestGetClientIP(t *testing.T) {
 		{"trusted proxy X-Forwarded-For", "10.0.0.2:80", map[string]string{"X-Forwarded-For": "203.0.113.2"}, []string{"10.0.0.0/8"}, "203.0.113.2"},
 		{"X-Real-IP preferred over X-Forwarded-For", "10.0.0.2:80", map[string]string{"X-Real-IP": "1.2.3.4", "X-Forwarded-For": "5.6.7.8"}, []string{"10.0.0.0/8"}, "1.2.3.4"},
 		{"untrusted proxy uses remote", "192.168.1.1:80", map[string]string{"X-Real-IP": "10.0.0.1"}, []string{"10.0.0.0/8"}, "192.168.1.1"},
-		{"first of X-Forwarded-For", "10.0.0.2:80", map[string]string{"X-Forwarded-For": " 203.0.113.3 , 10.0.0.1 "}, []string{"10.0.0.0/8"}, "203.0.113.3"},
+		{"rightmost non-trusted from X-Forwarded-For", "10.0.0.2:80", map[string]string{"X-Forwarded-For": " 203.0.113.3 , 10.0.0.1 "}, []string{"10.0.0.0/8"}, "203.0.113.3"},
+		{"X-Forwarded-For spoofing: take rightmost", "10.0.0.2:80", map[string]string{"X-Forwarded-For": "1.2.3.4, 203.0.113.50"}, []string{"10.0.0.0/8"}, "203.0.113.50"},
+		{"X-Real-IP in trusted network is ignored", "10.0.0.2:80", map[string]string{"X-Real-IP": "10.0.0.1", "X-Forwarded-For": "203.0.113.1"}, []string{"10.0.0.0/8"}, "203.0.113.1"},
+		{"X-Real-IP only and in trusted uses remote", "10.0.0.2:80", map[string]string{"X-Real-IP": "10.0.0.1"}, []string{"10.0.0.0/8"}, "10.0.0.2"},
 	}
 	for _, tt := range tests {
 		r, _ := http.NewRequest(http.MethodGet, "/", nil)

@@ -5,7 +5,8 @@ import (
 	"net/http"
 )
 
-// CodeFromStatus returns the application error code for a given HTTP status.
+// CodeFromStatus returns the default application error code for the given HTTP status
+// (e.g. 404 -> "NOT_FOUND", 500 -> "INTERNAL_ERROR").
 func CodeFromStatus(status int) string {
 	switch status {
 	case http.StatusBadRequest:
@@ -33,24 +34,52 @@ func CodeFromStatus(status int) string {
 	}
 }
 
-// HTTPError represents an error with HTTP status and application code.
+// HTTPError is an error that carries HTTP status and application error code for JSON responses.
 type HTTPError struct {
-	Err        error
-	StatusCode int
-	Code       string
-	// IsExpected is true for client errors (4xx); callers may use it to avoid logging as server errors.
+	Err        error  // Wrapped error; used for Error() and Unwrap().
+	StatusCode int    // HTTP status code (e.g. 400, 404, 500).
+	Code       string // Application code for the JSON body (e.g. "BAD_REQUEST", "NOT_FOUND").
+	// IsExpected is true for client errors (4xx); use IsExpectedClientError to check without type assertion.
 	IsExpected bool
 }
 
-func (e *HTTPError) Error() string   { return e.Err.Error() }
-func (e *HTTPError) Unwrap() error   { return e.Err }
-func (e *HTTPError) HTTPStatus() int { return e.StatusCode }
-func (e *HTTPError) GetCode() string { return e.Code }
+// Error implements error and returns the wrapped error's message.
+func (e *HTTPError) Error() string {
+	if e == nil || e.Err == nil {
+		return ""
+	}
+	return e.Err.Error()
+}
 
-// New returns an HTTPError with the given error, status code, and code. IsExpected is true for 4xx.
+// Unwrap returns the wrapped error for errors.Is/As.
+func (e *HTTPError) Unwrap() error {
+	if e == nil {
+		return nil
+	}
+	return e.Err
+}
+
+// HTTPStatus returns the HTTP status code to send in the response.
+func (e *HTTPError) HTTPStatus() int {
+	if e == nil {
+		return 0
+	}
+	return e.StatusCode
+}
+
+// GetCode returns the application error code for the JSON body.
+func (e *HTTPError) GetCode() string {
+	if e == nil {
+		return ""
+	}
+	return e.Code
+}
+
+// New builds an HTTPError with the given underlying error, HTTP status, and application code.
+// IsExpected is set to true when status is 4xx.
 func New(err error, status int, code string) *HTTPError {
 	if err == nil {
-		err = errors.New("")
+		err = errors.New(code)
 	}
 	return &HTTPError{
 		Err:        err,
@@ -60,6 +89,7 @@ func New(err error, status int, code string) *HTTPError {
 	}
 }
 
+// IsExpectedClientError reports whether err is an HTTPError with status 4xx (client error).
 func IsExpectedClientError(err error) bool {
 	var he *HTTPError
 	if errors.As(err, &he) {

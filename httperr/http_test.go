@@ -72,7 +72,7 @@ func TestIsExpectedClientError(t *testing.T) {
 	if IsExpectedClientError(nil) {
 		t.Error("nil should not be expected client error")
 	}
-	if !IsExpectedClientError(ErrInvalidID) {
+	if !IsExpectedClientError(ErrInvalidID()) {
 		t.Error("ErrInvalidID (4xx) should be reported as expected client error")
 	}
 	err := New(errors.New("x"), http.StatusNotFound, "NOT_FOUND")
@@ -93,13 +93,13 @@ func TestSentinels_StatusCodeAndCode(t *testing.T) {
 		wantStatus int
 		wantCode   string
 	}{
-		{"ErrForbidden", ErrForbidden, http.StatusForbidden, "FORBIDDEN"},
-		{"ErrNotFound", ErrNotFound, http.StatusNotFound, "NOT_FOUND"},
-		{"ErrConflict", ErrConflict, http.StatusConflict, "CONFLICT"},
-		{"ErrGone", ErrGone, http.StatusGone, "GONE"},
-		{"ErrUnprocessableEntity", ErrUnprocessableEntity, http.StatusUnprocessableEntity, "VALIDATION_ERROR"},
-		{"ErrTooManyRequests", ErrTooManyRequests, http.StatusTooManyRequests, "RATE_LIMIT_EXCEEDED"},
-		{"ErrServiceUnavailable", ErrServiceUnavailable, http.StatusServiceUnavailable, "SERVICE_UNAVAILABLE"},
+		{"ErrForbidden", ErrForbidden(), http.StatusForbidden, "FORBIDDEN"},
+		{"ErrNotFound", ErrNotFound(), http.StatusNotFound, "NOT_FOUND"},
+		{"ErrConflict", ErrConflict(), http.StatusConflict, "CONFLICT"},
+		{"ErrGone", ErrGone(), http.StatusGone, "GONE"},
+		{"ErrUnprocessableEntity", ErrUnprocessableEntity(), http.StatusUnprocessableEntity, "VALIDATION_ERROR"},
+		{"ErrTooManyRequests", ErrTooManyRequests(), http.StatusTooManyRequests, "RATE_LIMIT_EXCEEDED"},
+		{"ErrServiceUnavailable", ErrServiceUnavailable(), http.StatusServiceUnavailable, "SERVICE_UNAVAILABLE"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
