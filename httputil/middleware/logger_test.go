@@ -69,6 +69,7 @@ func TestLogger_LogsInfo_OnSuccess(t *testing.T) {
 	assert.Equal(t, http.StatusOK, endFields["status"])
 	assert.Contains(t, endFields, "latency_ms")
 	assert.Contains(t, endFields, "bytes")
+	child.AssertCalled(t, "Info", "http request")
 }
 
 func TestLogger_LogsWarn_On4xx(t *testing.T) {
@@ -93,6 +94,7 @@ func TestLogger_LogsWarn_On4xx(t *testing.T) {
 	r.ServeHTTP(rr, req)
 
 	assert.Equal(t, http.StatusForbidden, endFields["status"])
+	child.AssertCalled(t, "Warn", "http request error")
 }
 
 func TestLogger_LogsError_On5xx(t *testing.T) {
@@ -117,6 +119,7 @@ func TestLogger_LogsError_On5xx(t *testing.T) {
 	r.ServeHTTP(rr, req)
 
 	assert.Equal(t, http.StatusInternalServerError, endFields["status"])
+	child.AssertCalled(t, "Error", "http request failed")
 }
 
 func TestLogger_IncludesQueryAndRequestID_WhenSet(t *testing.T) {
