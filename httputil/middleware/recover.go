@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"runtime/debug"
 
-	logger "github.com/takuya-go-kit/go-logkit"
+	logger "github.com/wahrwelt-kit/go-logkit"
 )
 
 // Recoverer returns middleware that recovers panics, logs the panic and stack trace (if log is non-nil), and responds with 500 JSON. Place at the top of the chain.

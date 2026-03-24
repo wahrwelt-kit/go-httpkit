@@ -7,7 +7,7 @@ import (
 
 	"github.com/go-chi/render"
 
-	"github.com/takuya-go-kit/go-httpkit/httperr"
+	"github.com/wahrwelt-kit/go-httpkit/httperr"
 )
 
 // RenderJSON writes data as JSON with the given HTTP status.

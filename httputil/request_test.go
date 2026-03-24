@@ -7,10 +7,10 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/takuya-go-kit/go-httpkit/httperr"
 	playvalidator "github.com/go-playground/validator/v10"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/wahrwelt-kit/go-httpkit/httperr"
 )
 
 type noopValidator struct{}

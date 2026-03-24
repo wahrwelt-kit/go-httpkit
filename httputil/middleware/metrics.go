@@ -8,7 +8,7 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 
-	logger "github.com/takuya-go-kit/go-logkit"
+	logger "github.com/wahrwelt-kit/go-logkit"
 )
 
 // PathFromRequest returns the route pattern for the request (e.g. from chi.RouteContext). Used by Metrics for the path label. Must return a stable pattern like "/users/{id}", not the raw path, to avoid unbounded Prometheus cardinality. If the function is nil, path is "/unknown" or "/not-found" for 404.

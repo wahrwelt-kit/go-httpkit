@@ -4,7 +4,7 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/takuya-go-kit/go-httpkit/httperr"
+	"github.com/wahrwelt-kit/go-httpkit/httperr"
 )
 
 // ParseMultipartFormLimit parses the multipart form with the given body size and memory limits. On error writes an error response and returns false.

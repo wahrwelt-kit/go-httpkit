@@ -10,7 +10,7 @@ import (
 	"github.com/go-chi/render"
 	playvalidator "github.com/go-playground/validator/v10"
 
-	"github.com/takuya-go-kit/go-httpkit/httperr"
+	"github.com/wahrwelt-kit/go-httpkit/httperr"
 )
 
 // MaxRequestBodySize is the default body size limit (1 MiB) for DecodeAndValidate, DecodeAndValidateE, and DecodeJSON.

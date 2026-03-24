@@ -7,11 +7,11 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/takuya-go-kit/go-httpkit/httperr"
-	logmock "github.com/takuya-go-kit/go-logkit/mock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+	"github.com/wahrwelt-kit/go-httpkit/httperr"
+	logmock "github.com/wahrwelt-kit/go-logkit/mock"
 )
 
 func TestHandleError_HTTPError(t *testing.T) {

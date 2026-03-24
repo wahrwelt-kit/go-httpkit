@@ -7,7 +7,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/takuya-go-kit/go-httpkit/httperr"
+	"github.com/wahrwelt-kit/go-httpkit/httperr"
 )
 
 type contextKey string

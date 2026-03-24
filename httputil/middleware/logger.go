@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/takuya-go-kit/go-httpkit/httputil"
-	logger "github.com/takuya-go-kit/go-logkit"
+	"github.com/wahrwelt-kit/go-httpkit/httputil"
+	logger "github.com/wahrwelt-kit/go-logkit"
 )
 
 const (
