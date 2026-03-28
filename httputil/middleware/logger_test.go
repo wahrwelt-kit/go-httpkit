@@ -43,10 +43,10 @@ func TestLogger_LogsInfo_OnSuccess(t *testing.T) {
 	child := logmock.NewMockLogger(t)
 	var startFields, endFields logger.Fields
 	root.On("WithFields", mock.Anything).Run(func(args mock.Arguments) {
-		startFields = args.Get(0).(logger.Fields)
+		startFields = args.Get(0).(logger.Fields) //nolint:forcetypeassert
 	}).Return(child)
 	child.On("WithFields", mock.Anything).Run(func(args mock.Arguments) {
-		endFields = args.Get(0).(logger.Fields)
+		endFields = args.Get(0).(logger.Fields) //nolint:forcetypeassert
 	}).Return(child)
 	child.On("Info", "http request", mock.Anything).Return()
 
@@ -79,7 +79,7 @@ func TestLogger_LogsWarn_On4xx(t *testing.T) {
 	var endFields logger.Fields
 	root.On("WithFields", mock.Anything).Return(child)
 	child.On("WithFields", mock.Anything).Run(func(args mock.Arguments) {
-		endFields = args.Get(0).(logger.Fields)
+		endFields = args.Get(0).(logger.Fields) //nolint:forcetypeassert
 	}).Return(child)
 	child.On("Warn", "http request error", mock.Anything).Return()
 
@@ -104,7 +104,7 @@ func TestLogger_LogsError_On5xx(t *testing.T) {
 	var endFields logger.Fields
 	root.On("WithFields", mock.Anything).Return(child)
 	child.On("WithFields", mock.Anything).Run(func(args mock.Arguments) {
-		endFields = args.Get(0).(logger.Fields)
+		endFields = args.Get(0).(logger.Fields) //nolint:forcetypeassert
 	}).Return(child)
 	child.On("Error", "http request failed", mock.Anything).Return()
 
@@ -128,7 +128,7 @@ func TestLogger_IncludesQueryAndRequestID_WhenSet(t *testing.T) {
 	child := logmock.NewMockLogger(t)
 	var startFields logger.Fields
 	root.On("WithFields", mock.Anything).Run(func(args mock.Arguments) {
-		startFields = args.Get(0).(logger.Fields)
+		startFields = args.Get(0).(logger.Fields) //nolint:forcetypeassert
 	}).Return(child)
 	child.On("WithFields", mock.Anything).Return(child)
 	child.On("Info", "http request", mock.Anything).Return()
@@ -155,7 +155,7 @@ func TestLogger_RedactsSensitiveQueryParams(t *testing.T) {
 	child := logmock.NewMockLogger(t)
 	var startFields logger.Fields
 	root.On("WithFields", mock.Anything).Run(func(args mock.Arguments) {
-		startFields = args.Get(0).(logger.Fields)
+		startFields = args.Get(0).(logger.Fields) //nolint:forcetypeassert
 	}).Return(child)
 	child.On("WithFields", mock.Anything).Return(child)
 	child.On("Info", "http request", mock.Anything).Return()
@@ -175,13 +175,82 @@ func TestLogger_RedactsSensitiveQueryParams(t *testing.T) {
 	assert.NotContains(t, query, "secret")
 }
 
+func TestLogger_WithRedactedParams_RedactsCustomParam(t *testing.T) {
+	t.Parallel()
+	root := logmock.NewMockLogger(t)
+	child := logmock.NewMockLogger(t)
+	var startFields logger.Fields
+	root.On("WithFields", mock.Anything).Run(func(args mock.Arguments) {
+		startFields = args.Get(0).(logger.Fields) //nolint:forcetypeassert
+	}).Return(child)
+	child.On("WithFields", mock.Anything).Return(child)
+	child.On("Info", "http request", mock.Anything).Return()
+
+	r := chi.NewRouter()
+	r.Use(Logger(root, nil, WithRedactedParams("apiToken", "x_custom")))
+	r.Get("/", func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusOK) })
+
+	req := httptest.NewRequest(http.MethodGet, "/?apiToken=abc&x_custom=val&safe=ok", nil)
+	rr := httptest.NewRecorder()
+	r.ServeHTTP(rr, req)
+
+	require.NotNil(t, startFields)
+	query, ok := startFields["query"].(string)
+	require.True(t, ok)
+	assert.Contains(t, query, "REDACTED")
+	assert.NotContains(t, query, "abc")
+	assert.NotContains(t, query, "val")
+	assert.Contains(t, query, "safe=ok")
+}
+
+func TestLogger_WithSkipPaths_DoesNotLog(t *testing.T) {
+	t.Parallel()
+	root := logmock.NewMockLogger(t)
+	// No mock expectations - if Logger calls any method on root, testify will fail the test
+
+	r := chi.NewRouter()
+	r.Use(Logger(root, nil, WithSkipPaths("/health", "/ready")))
+	called := false
+	r.Get("/health", func(w http.ResponseWriter, _ *http.Request) {
+		called = true
+		w.WriteHeader(http.StatusOK)
+	})
+
+	req := httptest.NewRequest(http.MethodGet, "/health", nil)
+	rr := httptest.NewRecorder()
+	r.ServeHTTP(rr, req)
+
+	assert.True(t, called, "handler must still be called for skipped paths")
+	assert.Equal(t, http.StatusOK, rr.Code)
+}
+
+func TestLogger_WithSkipPaths_LogsNonSkipped(t *testing.T) {
+	t.Parallel()
+	root := logmock.NewMockLogger(t)
+	child := logmock.NewMockLogger(t)
+	root.On("WithFields", mock.Anything).Return(child)
+	child.On("WithFields", mock.Anything).Return(child)
+	child.On("Info", "http request", mock.Anything).Return()
+
+	r := chi.NewRouter()
+	r.Use(Logger(root, nil, WithSkipPaths("/health")))
+	r.Get("/api/users", func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusOK) })
+
+	req := httptest.NewRequest(http.MethodGet, "/api/users", nil)
+	rr := httptest.NewRecorder()
+	r.ServeHTTP(rr, req)
+
+	assert.Equal(t, http.StatusOK, rr.Code)
+	child.AssertCalled(t, "Info", "http request")
+}
+
 func TestLogger_DoesNotRedactSubstringParamName(t *testing.T) {
 	t.Parallel()
 	root := logmock.NewMockLogger(t)
 	child := logmock.NewMockLogger(t)
 	var startFields logger.Fields
 	root.On("WithFields", mock.Anything).Run(func(args mock.Arguments) {
-		startFields = args.Get(0).(logger.Fields)
+		startFields = args.Get(0).(logger.Fields) //nolint:forcetypeassert
 	}).Return(child)
 	child.On("WithFields", mock.Anything).Return(child)
 	child.On("Info", "http request", mock.Anything).Return()

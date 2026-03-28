@@ -60,24 +60,21 @@ func TestSanitizeSearchQ(t *testing.T) {
 
 func BenchmarkEscapeILIKE_Short(b *testing.B) {
 	s := "hello world"
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		_ = EscapeILIKE(s, 100)
 	}
 }
 
 func BenchmarkEscapeILIKE_WithSpecialChars(b *testing.B) {
 	s := `%foo\_bar\baz%`
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		_ = EscapeILIKE(s, 100)
 	}
 }
 
 func BenchmarkEscapeILIKE_Long(b *testing.B) {
 	s := strings.Repeat("x", 200)
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		_ = EscapeILIKE(s, 100)
 	}
 }

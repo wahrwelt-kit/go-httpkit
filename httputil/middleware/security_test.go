@@ -10,7 +10,7 @@ import (
 
 func TestSecurityHeaders(t *testing.T) {
 	t.Parallel()
-	chain := SecurityHeaders(false)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	chain := SecurityHeaders(false)(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	}))
 	w := httptest.NewRecorder()
@@ -28,7 +28,7 @@ func TestSecurityHeaders(t *testing.T) {
 
 func TestSecurityHeaders_WithHSTS(t *testing.T) {
 	t.Parallel()
-	chain := SecurityHeaders(true)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	chain := SecurityHeaders(true)(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	}))
 	w := httptest.NewRecorder()

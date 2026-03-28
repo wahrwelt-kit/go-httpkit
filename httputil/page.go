@@ -6,10 +6,10 @@ import (
 	"strconv"
 )
 
-// MaxPage is the maximum allowed page number for ClampPage.
+// MaxPage is the maximum allowed page number for ClampPage
 const MaxPage = 10000
 
-// ClampPage returns the page number clamped to [1, MaxPage]; uses 1 if p is nil or *p < 1.
+// ClampPage returns the page number clamped to [1, MaxPage]; uses 1 if p is nil or *p < 1
 func ClampPage(p *int) int {
 	if p == nil || *p < 1 {
 		return 1
@@ -20,8 +20,8 @@ func ClampPage(p *int) int {
 	return *p
 }
 
-// ClampPerPage returns perPage clamped to [defaultVal, maxVal], or defaultVal if nil/<=0.
-// If defaultVal > maxVal, the effective default is maxVal so the result is never above maxVal.
+// ClampPerPage returns perPage clamped to [defaultVal, maxVal], or defaultVal if nil/<=0
+// If defaultVal > maxVal, the effective default is maxVal so the result is never above maxVal
 func ClampPerPage(p *int, defaultVal, maxVal int) int {
 	if defaultVal > maxVal {
 		defaultVal = maxVal
@@ -35,12 +35,12 @@ func ClampPerPage(p *int, defaultVal, maxVal int) int {
 	return *p
 }
 
-// ClampLimit returns limit clamped to [defaultVal, maxVal], or defaultVal if nil/<=0.
+// ClampLimit returns limit clamped to [defaultVal, maxVal], or defaultVal if nil/<=0
 func ClampLimit(p *int, defaultVal, maxVal int) int {
 	return ClampPerPage(p, defaultVal, maxVal)
 }
 
-// ParseIntQuery parses the first query parameter key as positive int; returns nil if missing or invalid.
+// ParseIntQuery parses the first query parameter key as positive int; returns nil if missing or invalid
 func ParseIntQuery(r *http.Request, key string) *int {
 	q := r.URL.Query().Get(key)
 	if q == "" {
@@ -53,12 +53,12 @@ func ParseIntQuery(r *http.Request, key string) *int {
 	return &n
 }
 
-// Ptr returns a pointer to v. Useful for optional query params.
-func Ptr[T any](v T) *T {
+// Ptr returns a pointer to v. Useful for optional query params
+func Ptr[T any](v T) *T { //nolint:modernize
 	return &v
 }
 
-// TotalPages calculates the total number of pages for a given total and perPage.
+// TotalPages calculates the total number of pages for a given total and perPage
 func TotalPages(total int64, perPage int) int {
 	if perPage <= 0 {
 		return 0
@@ -70,7 +70,7 @@ func TotalPages(total int64, perPage int) int {
 	return int(n64)
 }
 
-// PaginationMeta holds pagination metadata for a response.
+// PaginationMeta holds pagination metadata for a response
 type PaginationMeta struct {
 	Page       int `json:"page"`
 	PerPage    int `json:"per_page"`
@@ -78,7 +78,7 @@ type PaginationMeta struct {
 	TotalPages int `json:"total_pages"`
 }
 
-// clampTotal clamps a total to the maximum integer value.
+// clampTotal clamps a total to the maximum integer value
 func clampTotal(total int64) int {
 	if total <= 0 {
 		return 0
@@ -89,7 +89,7 @@ func clampTotal(total int64) int {
 	return int(total)
 }
 
-// NewPaginationMeta builds PaginationMeta with Total and TotalPages derived from total and perPage.
+// NewPaginationMeta builds PaginationMeta with Total and TotalPages derived from total and perPage
 func NewPaginationMeta(page, perPage int, total int64) PaginationMeta {
 	return PaginationMeta{
 		Page:       page,

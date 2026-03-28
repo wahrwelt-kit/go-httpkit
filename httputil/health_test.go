@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -69,6 +70,27 @@ func TestHealthHandler_NilChecker(t *testing.T) {
 	assert.Equal(t, "ok", body.Checks["db"])
 }
 
+func TestHealthHandler_CustomTimeout(t *testing.T) {
+	t.Parallel()
+	var gotDeadline time.Time
+	checker := checkerFunc(func(ctx context.Context) error {
+		if d, ok := ctx.Deadline(); ok {
+			gotDeadline = d
+		}
+		return nil
+	})
+	handler := HealthHandler(map[string]Checker{
+		"db": checker,
+	}, HealthTimeout(1*time.Second))
+	w := httptest.NewRecorder()
+	r := httptest.NewRequest(http.MethodGet, "/health", nil)
+	before := time.Now()
+	handler(w, r)
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.True(t, gotDeadline.After(before), "deadline should be in the future")
+	assert.True(t, gotDeadline.Before(before.Add(2*time.Second)), "deadline should be within 1s timeout")
+}
+
 type okChecker struct{}
 
 func (okChecker) Check(context.Context) error { return nil }
@@ -76,3 +98,7 @@ func (okChecker) Check(context.Context) error { return nil }
 type errChecker struct{}
 
 func (errChecker) Check(context.Context) error { return errors.New("unavailable") }
+
+type checkerFunc func(ctx context.Context) error
+
+func (f checkerFunc) Check(ctx context.Context) error { return f(ctx) }

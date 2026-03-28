@@ -8,15 +8,15 @@ type securityOpts struct {
 	csp string
 }
 
-// SecurityOption configures SecurityHeaders.
+// SecurityOption configures SecurityHeaders
 type SecurityOption func(*securityOpts)
 
-// WithCSP sets the Content-Security-Policy header. Empty string leaves CSP unset for this middleware.
+// WithCSP sets the Content-Security-Policy header. Empty string leaves CSP unset for this middleware
 func WithCSP(csp string) SecurityOption {
 	return func(o *securityOpts) { o.csp = csp }
 }
 
-// SecurityHeaders returns middleware that sets common security headers (X-Content-Type-Options, X-Frame-Options, Referrer-Policy, Permissions-Policy, Content-Security-Policy). If addHSTS is true, adds Strict-Transport-Security (max-age=2 years, includeSubDomains, preload). Set addHSTS for HTTPS-only services. Options (e.g. WithCSP) override defaults.
+// SecurityHeaders returns middleware that sets common security headers (X-Content-Type-Options, X-Frame-Options, Referrer-Policy, Permissions-Policy, Content-Security-Policy). If addHSTS is true, adds Strict-Transport-Security (max-age=2 years, includeSubDomains, preload). Set addHSTS for HTTPS-only services. Options (e.g. WithCSP) override defaults
 func SecurityHeaders(addHSTS bool, opts ...SecurityOption) func(http.Handler) http.Handler {
 	cfg := securityOpts{csp: defaultCSP}
 	for _, opt := range opts {

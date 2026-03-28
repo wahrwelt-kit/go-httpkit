@@ -7,10 +7,10 @@ import (
 	"unicode/utf8"
 )
 
-// DefaultSearchMaxLen is the default maximum rune length for search input in ValidateSearchQ and EscapeILIKE.
+// DefaultSearchMaxLen is the default maximum rune length for search input in ValidateSearchQ and EscapeILIKE
 const DefaultSearchMaxLen = 100
 
-// ValidateSearchQ returns true if q is valid for search (within DefaultSearchMaxLen runes and no control characters).
+// ValidateSearchQ returns true if q is valid for search (within DefaultSearchMaxLen runes and no control characters)
 func ValidateSearchQ(q string) bool {
 	if utf8.RuneCountInString(q) > DefaultSearchMaxLen {
 		return false
@@ -23,7 +23,7 @@ func ValidateSearchQ(q string) bool {
 	return true
 }
 
-// EscapeILIKE escapes %, _, and \ for safe use in PostgreSQL ILIKE. Output is truncated to maxLen runes (or DefaultSearchMaxLen if maxLen <= 0).
+// EscapeILIKE escapes %, _, and \ for safe use in PostgreSQL ILIKE. Output is truncated to maxLen runes (or DefaultSearchMaxLen if maxLen <= 0)
 func EscapeILIKE(s string, maxLen int) string {
 	if maxLen <= 0 {
 		maxLen = DefaultSearchMaxLen
@@ -62,7 +62,7 @@ func EscapeILIKE(s string, maxLen int) string {
 	return b.String()
 }
 
-// SanitizeSearchQ is EscapeILIKE with default max length (DefaultSearchMaxLen when maxLen <= 0).
+// SanitizeSearchQ is EscapeILIKE with default max length (DefaultSearchMaxLen when maxLen <= 0)
 func SanitizeSearchQ(q string, maxLen int) string {
 	return EscapeILIKE(q, maxLen)
 }

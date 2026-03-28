@@ -130,7 +130,7 @@ func TestDecodeAndValidateE_InvalidJSON(t *testing.T) {
 	_, err := DecodeAndValidateE[struct{ X int }](r, v)
 	require.Error(t, err)
 	var he *httperr.HTTPError
-	require.True(t, errors.As(err, &he))
+	require.ErrorAs(t, err, &he)
 	assert.Equal(t, http.StatusBadRequest, he.HTTPStatus())
 	assert.Equal(t, "INVALID_JSON", he.GetCode())
 }
@@ -142,7 +142,7 @@ func TestDecodeAndValidateE_TrailingData(t *testing.T) {
 	_, err := DecodeAndValidateE[struct{ X int }](r, v)
 	require.Error(t, err)
 	var he *httperr.HTTPError
-	require.True(t, errors.As(err, &he))
+	require.ErrorAs(t, err, &he)
 	assert.Equal(t, "INVALID_JSON", he.GetCode())
 }
 
@@ -153,7 +153,7 @@ func TestDecodeAndValidateE_ValidationError(t *testing.T) {
 	_, err := DecodeAndValidateE[struct{ X int }](r, v)
 	require.Error(t, err)
 	var he *httperr.HTTPError
-	require.True(t, errors.As(err, &he))
+	require.ErrorAs(t, err, &he)
 	assert.Equal(t, http.StatusBadRequest, he.HTTPStatus())
 	assert.Equal(t, "VALIDATION_ERROR", he.GetCode())
 }
@@ -164,7 +164,7 @@ func TestDecodeAndValidateE_NilRequest(t *testing.T) {
 	_, err := DecodeAndValidateE[struct{ X int }](nil, v)
 	require.Error(t, err)
 	var he *httperr.HTTPError
-	require.True(t, errors.As(err, &he))
+	require.ErrorAs(t, err, &he)
 	assert.Equal(t, http.StatusBadRequest, he.HTTPStatus())
 	assert.Equal(t, "BAD_REQUEST", he.GetCode())
 }
@@ -175,7 +175,7 @@ func TestDecodeAndValidateE_NilValidator(t *testing.T) {
 	_, err := DecodeAndValidateE[struct{ X int }](r, nil)
 	require.Error(t, err)
 	var he *httperr.HTTPError
-	require.True(t, errors.As(err, &he))
+	require.ErrorAs(t, err, &he)
 	assert.Equal(t, http.StatusInternalServerError, he.HTTPStatus())
 	assert.Equal(t, "INTERNAL_ERROR", he.GetCode())
 }
@@ -188,7 +188,7 @@ func TestDecodeAndValidateE_BodyTooLarge(t *testing.T) {
 	_, err := DecodeAndValidateE[struct{ X int }](r, v)
 	require.Error(t, err)
 	var he *httperr.HTTPError
-	require.True(t, errors.As(err, &he))
+	require.ErrorAs(t, err, &he)
 	assert.Equal(t, http.StatusRequestEntityTooLarge, he.HTTPStatus())
 	assert.Equal(t, "REQUEST_ENTITY_TOO_LARGE", he.GetCode())
 }
@@ -201,7 +201,7 @@ func TestDecodeAndValidateE_BodyExactlyLimit(t *testing.T) {
 	_, err := DecodeAndValidateE[struct{ X int }](r, v)
 	require.Error(t, err)
 	var he *httperr.HTTPError
-	require.True(t, errors.As(err, &he))
+	require.ErrorAs(t, err, &he)
 	assert.Equal(t, http.StatusRequestEntityTooLarge, he.HTTPStatus())
 	assert.Equal(t, "REQUEST_ENTITY_TOO_LARGE", he.GetCode())
 }
@@ -269,7 +269,7 @@ func TestDecodeJSON_BodyTooLarge(t *testing.T) {
 	var out struct{ X int }
 	err := DecodeJSON(r, &out)
 	require.Error(t, err)
-	assert.True(t, errors.Is(err, ErrRequestBodyTooLarge))
+	assert.ErrorIs(t, err, ErrRequestBodyTooLarge)
 }
 
 type playgroundValidator struct{ v *playvalidator.Validate }
@@ -303,7 +303,7 @@ func TestDecodeAndValidateE_PlaygroundValidation(t *testing.T) {
 	_, err := DecodeAndValidateE[req](r, v)
 	require.Error(t, err)
 	var valErr *ValidationHTTPError
-	require.True(t, errors.As(err, &valErr))
+	require.ErrorAs(t, err, &valErr)
 	assert.Equal(t, http.StatusBadRequest, valErr.HTTPStatus())
 	assert.NotEmpty(t, valErr.Errors)
 	assert.Equal(t, "Email", valErr.Errors[0].Field)
@@ -371,7 +371,7 @@ func TestSanitizeValidationMessage(t *testing.T) {
 	}
 	err := v.Struct(s{})
 	var valErrs playvalidator.ValidationErrors
-	require.True(t, errors.As(err, &valErrs))
+	require.ErrorAs(t, err, &valErrs)
 	items := validationErrorsToItems(valErrs)
 	require.Len(t, items, 3)
 	assert.Equal(t, "A", items[0].Field)
@@ -388,8 +388,7 @@ func BenchmarkDecodeAndValidate(b *testing.B) {
 	type req struct {
 		X int `json:"x"`
 	}
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		w := httptest.NewRecorder()
 		r := httptest.NewRequest(http.MethodPost, "/", bytes.NewReader(body))
 		_, _ = DecodeAndValidate[req](w, r, v)
@@ -402,8 +401,7 @@ func BenchmarkDecodeAndValidateE(b *testing.B) {
 	type req struct {
 		X int `json:"x"`
 	}
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		r := httptest.NewRequest(http.MethodPost, "/", bytes.NewReader(body))
 		_, _ = DecodeAndValidateE[req](r, v)
 	}

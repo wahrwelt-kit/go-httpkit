@@ -14,7 +14,7 @@ func TestRecoverer_NoPanic(t *testing.T) {
 	t.Parallel()
 	log, err := logger.New(logger.WithLevel(logger.InfoLevel), logger.WithOutput(logger.ConsoleOutput))
 	require.NoError(t, err)
-	chain := Recoverer(log)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	chain := Recoverer(log)(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	}))
 	w := httptest.NewRecorder()
@@ -25,7 +25,7 @@ func TestRecoverer_NoPanic(t *testing.T) {
 
 func TestRecoverer_Panic_500(t *testing.T) {
 	t.Parallel()
-	chain := Recoverer(logger.Noop())(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	chain := Recoverer(logger.Noop())(http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {
 		panic("test panic")
 	}))
 	w := httptest.NewRecorder()
@@ -38,7 +38,7 @@ func TestRecoverer_Panic_500(t *testing.T) {
 
 func TestRecoverer_NilLogger(t *testing.T) {
 	t.Parallel()
-	chain := Recoverer(nil)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	chain := Recoverer(nil)(http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {
 		panic("x")
 	}))
 	w := httptest.NewRecorder()

@@ -33,20 +33,22 @@ HTTP-aware errors: HTTPError (Err, StatusCode, Code, IsExpected), New, CodeFromS
 - **Pagination**: ClampPage, ClampPerPage, ClampLimit, ParseIntQuery, TotalPages, NewPaginationMeta, Ptr[T]
 - **Query**: ParseBoolQuery, ParseEnumQuery[T], ParseSortQuery, ParseTimeQuery
 - **Search**: EscapeILIKE, ValidateSearchQ, SanitizeSearchQ
-- **IP**: GetClientIP(r, trustedProxyCIDRs)
+- **IP**: GetClientIPWithNets, GetClientIPE, ParseTrustedProxyCIDRs
 - **Chi**: ChiPathFromRequest(r)
 - **Multipart**: ParseMultipartFormLimit
 - **Download**: RenderJSONAttachment, RenderStream, RenderBytes
-- **SSE**: SSEWriter, NewSSEWriter, Send, SendJSON, Close
-- **Health**: Checker, HealthHandler(checkers) → JSON status and checks
+- **SSE**: SSEWriter, NewSSEWriter, NewSSEWriterWithLimit(MaxEventBytes), Send, SendJSON, Close, Heartbeat
+- **Health**: Checker, HealthHandler(checkers, HealthTimeout, HealthHideDetails) -> JSON status and checks
 
 ### httputil/middleware
 
+- **Logger(log, cidrs, opts...)**: request logging; WithRedactedParams to add sensitive query params; WithSkipPaths to suppress health/metrics noise
 - **Metrics**: Prometheus request count and duration; PathFromRequest for route pattern
 - **Recoverer(log)**: panic recovery, 500 response, stack log via go-logkit
 - **Timeout(d)**: request context timeout, 503 on deadline
 - **SecurityHeaders**: X-Content-Type-Options, X-Frame-Options, Referrer-Policy, Permissions-Policy, CSP
 - **RequestID**: X-Request-ID from header or new UUID; GetRequestID(ctx)
+- **ClientIP(cidrs)**: resolves and stores client IP in context; GetClientIPFromContext
 
 ## Example
 

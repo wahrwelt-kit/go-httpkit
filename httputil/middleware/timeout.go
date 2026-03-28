@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"maps"
 	"net/http"
 	"runtime/debug"
 	"sync"
@@ -13,7 +14,7 @@ import (
 	logger "github.com/wahrwelt-kit/go-logkit"
 )
 
-// ErrResponseBodyTooLarge is returned by TimeoutWithLimit when the handler writes more than maxResponseBytes.
+// ErrResponseBodyTooLarge is returned by TimeoutWithLimit when the handler writes more than maxResponseBytes
 var ErrResponseBodyTooLarge = errors.New("response body size limit exceeded")
 
 const timeoutGracePeriod = 5 * time.Second
@@ -35,9 +36,7 @@ func (tw *timeoutWriter) copyHeaderOnce() {
 		return
 	}
 	tw.headerCopied = true
-	for k, v := range tw.hijackedHeader {
-		tw.ResponseWriter.Header()[k] = v
-	}
+	maps.Copy(tw.ResponseWriter.Header(), tw.hijackedHeader)
 }
 
 func (tw *timeoutWriter) Header() http.Header {
@@ -108,12 +107,15 @@ func (tw *timeoutWriter) writePanicResponse() {
 	_, _ = tw.ResponseWriter.Write([]byte(`{"code":"INTERNAL_ERROR","message":"Internal server error"}`))
 }
 
-// Timeout returns middleware that runs the handler with a context deadline; on timeout responds with 503 JSON. The response is buffered in memory.
+// Timeout returns middleware that runs the handler with a context deadline; on timeout responds with 503 JSON. The response is buffered in memory
 func Timeout(d time.Duration, log ...logger.Logger) func(http.Handler) http.Handler {
 	return TimeoutWithLimit(d, 0, log...)
 }
 
-// TimeoutWithLimit is like Timeout but caps response body size; when exceeded returns ErrResponseBodyTooLarge and truncates the response.
+// TimeoutWithLimit is like Timeout but caps the response body size buffered in memory
+// When the handler's Write call would exceed maxResponseBytes, Write returns ErrResponseBodyTooLarge
+// to the handler - the middleware itself does not surface this error to the chain
+// Use maxResponseBytes <= 0 for no limit (equivalent to Timeout)
 func TimeoutWithLimit(d time.Duration, maxResponseBytes int64, log ...logger.Logger) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

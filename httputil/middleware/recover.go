@@ -7,7 +7,7 @@ import (
 	logger "github.com/wahrwelt-kit/go-logkit"
 )
 
-// Recoverer returns middleware that recovers panics, logs the panic and stack trace (if log is non-nil), and responds with 500 JSON. Place at the top of the chain.
+// Recoverer returns middleware that recovers panics, logs the panic and stack trace (if log is non-nil), and responds with 500 JSON. Place at the top of the chain
 func Recoverer(log logger.Logger) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

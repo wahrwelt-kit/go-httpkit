@@ -1,10 +1,12 @@
 package httputil
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -85,4 +87,47 @@ func TestSSEWriter_Close_NoOpAfter(t *testing.T) {
 	err := sw.Send("e", "d")
 	require.ErrorIs(t, err, ErrSSEClosed)
 	assert.Empty(t, w.Body.String())
+}
+
+func TestSSEWriter_Heartbeat_WritesComment(t *testing.T) {
+	t.Parallel()
+	w := httptest.NewRecorder()
+	sw, ok := NewSSEWriter(w)
+	require.True(t, ok)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		sw.Heartbeat(ctx, 20*time.Millisecond)
+	}()
+
+	time.Sleep(60 * time.Millisecond)
+	cancel()
+	<-done
+
+	body := w.Body.String()
+	assert.Contains(t, body, ": ping\n\n")
+}
+
+func TestSSEWriter_Heartbeat_StopsWhenClosed(t *testing.T) {
+	t.Parallel()
+	w := httptest.NewRecorder()
+	sw, _ := NewSSEWriter(w)
+
+	ctx := context.Background()
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		sw.Heartbeat(ctx, 10*time.Millisecond)
+	}()
+
+	time.Sleep(25 * time.Millisecond)
+	sw.Close()
+
+	select {
+	case <-done:
+	case <-time.After(200 * time.Millisecond):
+		t.Fatal("Heartbeat did not stop after Close()")
+	}
 }

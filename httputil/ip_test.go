@@ -44,7 +44,7 @@ func TestParseTrustedProxyCIDRs(t *testing.T) {
 	}
 }
 
-func TestGetClientIP(t *testing.T) {
+func TestGetClientIPE(t *testing.T) {
 	t.Parallel()
 	tests := []struct {
 		name              string
@@ -70,9 +70,9 @@ func TestGetClientIP(t *testing.T) {
 		for k, v := range tt.headers {
 			r.Header.Set(k, v)
 		}
-		got := GetClientIP(r, tt.trustedProxyCIDRs)
+		got, _ := GetClientIPE(r, tt.trustedProxyCIDRs)
 		if got != tt.want {
-			t.Errorf("%s: GetClientIP() = %q, want %q", tt.name, got, tt.want)
+			t.Errorf("%s: GetClientIPE() = %q, want %q", tt.name, got, tt.want)
 		}
 	}
 }

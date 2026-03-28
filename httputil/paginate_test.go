@@ -26,10 +26,10 @@ func TestNewPaginated(t *testing.T) {
 func TestFetchPage_Success(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
-	fetchFn := func(ctx context.Context, limit, offset int) ([]int, error) {
+	fetchFn := func(_ context.Context, _, offset int) ([]int, error) {
 		return []int{offset + 1, offset + 2}, nil
 	}
-	countFn := func(ctx context.Context) (int64, error) {
+	countFn := func(_ context.Context) (int64, error) {
 		return 100, nil
 	}
 	p, err := FetchPage(ctx, 2, 10, fetchFn, countFn)
@@ -46,10 +46,10 @@ func TestFetchPage_FetchError(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	fetchErr := errors.New("fetch failed")
-	fetchFn := func(ctx context.Context, limit, offset int) ([]int, error) {
+	fetchFn := func(_ context.Context, _, _ int) ([]int, error) {
 		return nil, fetchErr
 	}
-	countFn := func(ctx context.Context) (int64, error) {
+	countFn := func(_ context.Context) (int64, error) {
 		return 0, nil
 	}
 	_, err := FetchPage(ctx, 1, 10, fetchFn, countFn)
@@ -61,10 +61,10 @@ func TestFetchPage_CountError(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	countErr := errors.New("count failed")
-	fetchFn := func(ctx context.Context, limit, offset int) ([]int, error) {
+	fetchFn := func(_ context.Context, _, _ int) ([]int, error) {
 		return nil, nil
 	}
-	countFn := func(ctx context.Context) (int64, error) {
+	countFn := func(_ context.Context) (int64, error) {
 		return 0, countErr
 	}
 	_, err := FetchPage(ctx, 1, 10, fetchFn, countFn)

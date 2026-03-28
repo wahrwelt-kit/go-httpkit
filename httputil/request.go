@@ -13,20 +13,20 @@ import (
 	"github.com/wahrwelt-kit/go-httpkit/httperr"
 )
 
-// MaxRequestBodySize is the default body size limit (1 MiB) for DecodeAndValidate, DecodeAndValidateE, and DecodeJSON.
+// MaxRequestBodySize is the default body size limit (1 MiB) for DecodeAndValidate, DecodeAndValidateE, and DecodeJSON
 const MaxRequestBodySize = 1 << 20
 
-// ErrRequestBodyTooLarge is returned by DecodeJSON when the request body exceeds the configured limit.
+// ErrRequestBodyTooLarge is returned by DecodeJSON when the request body exceeds the configured limit
 var ErrRequestBodyTooLarge = errors.New("request body too large")
 
 type decodeConfig struct {
 	maxBodySize int64
 }
 
-// DecodeOption configures decode behaviour (e.g. body size limit).
+// DecodeOption configures decode behaviour (e.g. body size limit)
 type DecodeOption func(*decodeConfig)
 
-// WithMaxBodySize sets the request body size limit for decode. Values <= 0 use MaxRequestBodySize.
+// WithMaxBodySize sets the request body size limit for decode. Values <= 0 use MaxRequestBodySize
 func WithMaxBodySize(n int64) DecodeOption {
 	return func(c *decodeConfig) { c.maxBodySize = n }
 }
@@ -42,7 +42,7 @@ func applyDecodeOptions(opts []DecodeOption) decodeConfig {
 	return cfg
 }
 
-// Validator validates a value (e.g. go-playground/validator). Used by DecodeAndValidate and DecodeAndValidateE.
+// Validator validates a value (e.g. go-playground/validator). Used by DecodeAndValidate and DecodeAndValidateE
 type Validator interface {
 	Validate(any) error
 }
@@ -116,7 +116,7 @@ func validationErrorsToItems(valErr playvalidator.ValidationErrors) []Validation
 }
 
 // DecodeAndValidate reads JSON from the request body (limit from WithMaxBodySize or MaxRequestBodySize, no unknown fields, no trailing data),
-// then validates with v. On error it writes the appropriate JSON response and returns (zero, false).
+// then validates with v. On error it writes the appropriate JSON response and returns (zero, false)
 func DecodeAndValidate[T any](w http.ResponseWriter, r *http.Request, v Validator, opts ...DecodeOption) (T, bool) {
 	var req T
 	cfg := applyDecodeOptions(opts)
@@ -124,7 +124,7 @@ func DecodeAndValidate[T any](w http.ResponseWriter, r *http.Request, v Validato
 		if w != nil {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusBadRequest)
-			_ = json.NewEncoder(w).Encode(ErrorResponse{Code: "BAD_REQUEST", Message: "request or response writer is nil"})
+			_ = json.NewEncoder(w).Encode(ErrorResponse{Code: "BAD_REQUEST", Message: "request or response writer is nil"}) //nolint:errchkjson
 		}
 		return req, false
 	}
@@ -161,7 +161,7 @@ func DecodeAndValidate[T any](w http.ResponseWriter, r *http.Request, v Validato
 	}
 	if v == nil {
 		render.Status(r, http.StatusInternalServerError)
-		render.JSON(w, r, ErrorResponse{Code: "INTERNAL_ERROR", Message: "validation not configured"})
+		render.JSON(w, r, ErrorResponse{Code: "INTERNAL_ERROR", Message: "Internal server error"})
 		return req, false
 	}
 	if err := v.Validate(req); err != nil {
@@ -179,8 +179,8 @@ func DecodeAndValidate[T any](w http.ResponseWriter, r *http.Request, v Validato
 	return req, true
 }
 
-// DecodeAndValidateE reads and validates JSON from the request body and returns an error without writing a response.
-// Returns *httperr.HTTPError for invalid JSON, trailing data, body too large, or validation failure.
+// DecodeAndValidateE reads and validates JSON from the request body and returns an error without writing a response
+// Returns *httperr.HTTPError for invalid JSON, trailing data, body too large, or validation failure
 func DecodeAndValidateE[T any](r *http.Request, v Validator, opts ...DecodeOption) (T, error) {
 	var req T
 	cfg := applyDecodeOptions(opts)
@@ -222,7 +222,7 @@ func DecodeAndValidateE[T any](r *http.Request, v Validator, opts ...DecodeOptio
 	return req, nil
 }
 
-// DecodeJSON decodes JSON from the request body (limit from WithMaxBodySize or MaxRequestBodySize, no unknown fields, no trailing data) into v.
+// DecodeJSON decodes JSON from the request body (limit from WithMaxBodySize or MaxRequestBodySize, no unknown fields, no trailing data) into v
 func DecodeJSON[T any](r *http.Request, v *T, opts ...DecodeOption) error {
 	cfg := applyDecodeOptions(opts)
 	if r == nil || r.Body == nil {

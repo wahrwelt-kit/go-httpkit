@@ -7,8 +7,8 @@ import (
 	"strings"
 )
 
-// ParseTrustedProxyCIDRs parses CIDR strings into networks. Invalid or empty entries are skipped.
-// Returns (nil, error) if all entries are invalid. If only some are invalid, returns (valid nets, error) so the caller can log the invalid list.
+// ParseTrustedProxyCIDRs parses CIDR strings into networks. Invalid or empty entries are skipped
+// Returns (nil, error) if all entries are invalid. If only some are invalid, returns (valid nets, error) so the caller can log the invalid list
 func ParseTrustedProxyCIDRs(cidrs []string) ([]*net.IPNet, error) {
 	if len(cidrs) == 0 {
 		return nil, nil
@@ -36,7 +36,7 @@ func ParseTrustedProxyCIDRs(cidrs []string) ([]*net.IPNet, error) {
 	return nets, nil
 }
 
-// GetClientIPWithNets returns the client IP, using X-Real-IP and X-Forwarded-For when RemoteAddr is in trustedNets.
+// GetClientIPWithNets returns the client IP, using X-Real-IP and X-Forwarded-For when RemoteAddr is in trustedNets
 func GetClientIPWithNets(r *http.Request, trustedNets []*net.IPNet) string {
 	if r == nil {
 		return ""
@@ -69,16 +69,9 @@ func GetClientIPWithNets(r *http.Request, trustedNets []*net.IPNet) string {
 	return remoteIP
 }
 
-// GetClientIP returns the client IP. When RemoteAddr is in a trusted proxy CIDR, X-Real-IP and X-Forwarded-For are used.
-// Parse errors from trustedProxyCIDRs are ignored; if all are invalid, only RemoteAddr is used.
-//
-// Deprecated: Use GetClientIPE so invalid CIDR configuration is not silently ignored.
-func GetClientIP(r *http.Request, trustedProxyCIDRs []string) string {
-	nets, _ := ParseTrustedProxyCIDRs(trustedProxyCIDRs)
-	return GetClientIPWithNets(r, nets)
-}
-
-// GetClientIPE returns the client IP like GetClientIP but returns an error when ParseTrustedProxyCIDRs fails (e.g. all CIDRs invalid). When only some CIDRs are invalid, returns the IP using valid nets and the parse error so the caller can log it.
+// GetClientIPE returns the client IP like GetClientIPWithNets but accepts CIDR strings instead of parsed nets
+// Returns an error when all CIDRs are invalid (no nets, returns "" and the error)
+// When only some CIDRs are invalid, returns the IP using the valid nets and the parse error so the caller can log it
 func GetClientIPE(r *http.Request, trustedProxyCIDRs []string) (string, error) {
 	nets, err := ParseTrustedProxyCIDRs(trustedProxyCIDRs)
 	if err != nil && nets == nil {
@@ -87,7 +80,7 @@ func GetClientIPE(r *http.Request, trustedProxyCIDRs []string) (string, error) {
 	return GetClientIPWithNets(r, nets), err
 }
 
-// peerIP returns the IP address from a remote address string.
+// peerIP returns the IP address from a remote address string
 func peerIP(remoteAddr string) string {
 	ip, _, err := net.SplitHostPort(remoteAddr)
 	if err != nil {
@@ -96,7 +89,7 @@ func peerIP(remoteAddr string) string {
 	return ip
 }
 
-// isIPInNets checks if an IP address is in a list of networks.
+// isIPInNets checks if an IP address is in a list of networks
 func isIPInNets(ipStr string, nets []*net.IPNet) bool {
 	ip := net.ParseIP(ipStr)
 	if ip == nil {

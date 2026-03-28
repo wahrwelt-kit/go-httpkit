@@ -9,7 +9,7 @@ import (
 
 type clientIPContextKey struct{}
 
-// ClientIP returns middleware that resolves the client IP (using trustedProxyCIDRs for X-Real-IP and X-Forwarded-For) and stores it in the request context. CIDRs are parsed once at build time. Returns an error if all entries are invalid; empty or nil slice is valid (no proxy trust).
+// ClientIP returns middleware that resolves the client IP (using trustedProxyCIDRs for X-Real-IP and X-Forwarded-For) and stores it in the request context. CIDRs are parsed once at build time. Returns an error if all entries are invalid; empty or nil slice is valid (no proxy trust)
 func ClientIP(trustedProxyCIDRs []string) (func(http.Handler) http.Handler, error) {
 	nets, err := httputil.ParseTrustedProxyCIDRs(trustedProxyCIDRs)
 	if err != nil && nets == nil {
@@ -24,7 +24,7 @@ func ClientIP(trustedProxyCIDRs []string) (func(http.Handler) http.Handler, erro
 	}, nil
 }
 
-// GetClientIPFromContext returns the client IP stored by the ClientIP middleware, or "" if not set.
+// GetClientIPFromContext returns the client IP stored by the ClientIP middleware, or "" if not set
 func GetClientIPFromContext(ctx context.Context) string {
 	if ctx == nil {
 		return ""

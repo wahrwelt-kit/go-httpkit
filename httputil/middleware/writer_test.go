@@ -128,7 +128,7 @@ func TestStatusWriter_Hijack_NotSupported(t *testing.T) {
 	conn, rw, err := sw.Hijack()
 	assert.Nil(t, conn)
 	assert.Nil(t, rw)
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Equal(t, "hijack not supported", err.Error())
 }
 
@@ -234,7 +234,7 @@ func TestStatusWriter_Write_Error(t *testing.T) {
 	sw := &statusWriter{ResponseWriter: ew}
 	n, err := sw.Write([]byte("data"))
 	assert.Equal(t, 0, n)
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Equal(t, 0, sw.BytesWritten())
 }
 
@@ -269,11 +269,9 @@ func TestStatusWriter_Concurrent_Write(t *testing.T) {
 	sw, _ := newStatusWriter()
 	var wg sync.WaitGroup
 	for range 50 {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			_, _ = sw.Write([]byte("ab"))
-		}()
+		})
 	}
 	wg.Wait()
 	assert.Equal(t, 100, sw.BytesWritten())

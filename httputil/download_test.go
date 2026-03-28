@@ -5,6 +5,9 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestRenderJSONAttachment(t *testing.T) {
@@ -114,4 +117,45 @@ func TestRenderStream_AllInvalidFilename(t *testing.T) {
 	if !strings.Contains(cd, "download") {
 		t.Errorf("fallback filename not used: Content-Disposition = %q", cd)
 	}
+}
+
+func TestRenderStreamLimited_Truncated(t *testing.T) {
+	t.Parallel()
+	// Source has 10 bytes, limit is 5 - should return ErrStreamTruncated
+	w := httptest.NewRecorder()
+	src := bytes.NewReader([]byte("0123456789"))
+	err := RenderStreamLimited(w, "application/octet-stream", "out.bin", src, 5)
+	require.ErrorIs(t, err, ErrStreamTruncated)
+	// The first 5 bytes must have been written
+	assert.Equal(t, "01234", w.Body.String())
+}
+
+func TestRenderStreamLimited_NoLimit(t *testing.T) {
+	t.Parallel()
+	w := httptest.NewRecorder()
+	src := bytes.NewReader([]byte("hello"))
+	err := RenderStreamLimited(w, "application/octet-stream", "out.bin", src, 0)
+	require.NoError(t, err)
+	assert.Equal(t, "hello", w.Body.String())
+}
+
+func TestRenderStream_InvalidContentType(t *testing.T) {
+	t.Parallel()
+	w := httptest.NewRecorder()
+	err := RenderStream(w, "text/plain\r\nX-Injected: evil", "file.txt", bytes.NewReader(nil))
+	require.ErrorIs(t, err, ErrInvalidContentType)
+}
+
+func TestRenderBytes_InvalidContentType(t *testing.T) {
+	t.Parallel()
+	w := httptest.NewRecorder()
+	err := RenderBytes(w, "application/octet-stream\nEvil: header", "file.bin", []byte("data"))
+	require.ErrorIs(t, err, ErrInvalidContentType)
+}
+
+func TestRenderStreamLimited_NilReader(t *testing.T) {
+	t.Parallel()
+	w := httptest.NewRecorder()
+	err := RenderStreamLimited(w, "text/plain", "file.txt", nil, 0)
+	require.Error(t, err)
 }

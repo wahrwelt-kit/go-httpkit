@@ -8,39 +8,51 @@ import (
 	"time"
 )
 
-const healthCheckTimeout = 5 * time.Second
+const defaultHealthCheckTimeout = 5 * time.Second
 
-// Checker performs a single health check. Implementations should respect ctx cancellation.
+// Checker performs a single health check. Implementations should respect ctx cancellation
 type Checker interface {
 	Check(ctx context.Context) error
 }
 
-// HealthHandlerOption configures HealthHandler behaviour.
+// HealthHandlerOption configures HealthHandler behaviour
 type HealthHandlerOption func(*healthOpts)
 
 type healthOpts struct {
 	hideDetails   bool
 	onEncodeError func(error)
+	timeout       time.Duration
 }
 
-// HealthOnEncodeError sets a callback invoked when JSON encoding of the health response fails (e.g. for logging).
+// HealthOnEncodeError sets a callback invoked when JSON encoding of the health response fails (e.g. for logging)
 func HealthOnEncodeError(f func(error)) HealthHandlerOption {
 	return func(o *healthOpts) { o.onEncodeError = f }
 }
 
-// HealthHideDetails omits per-check results from the JSON response; only status (ok/degraded) is returned.
+// HealthHideDetails omits per-check results from the JSON response; only status (ok/degraded) is returned
 func HealthHideDetails() HealthHandlerOption {
 	return func(o *healthOpts) { o.hideDetails = true }
 }
 
-// HealthHandler returns an HTTP handler that runs all checkers in parallel with a timeout and returns JSON with status and optional check results.
+// HealthTimeout sets the deadline for all checkers to complete. Defaults to 5 seconds when not set or <= 0
+// Checkers receive a context cancelled when the timeout expires; implementations should respect ctx.Done()
+func HealthTimeout(d time.Duration) HealthHandlerOption {
+	return func(o *healthOpts) { o.timeout = d }
+}
+
+// HealthHandler returns an HTTP handler that runs all checkers in parallel with a configurable timeout (default 5s)
+// and returns JSON with status ("ok" or "degraded") and optional per-check results
+// Responds 200 when all checks pass, 503 when any check returns an error or panics
 func HealthHandler(checkers map[string]Checker, opts ...HealthHandlerOption) http.HandlerFunc {
 	var o healthOpts
 	for _, opt := range opts {
 		opt(&o)
 	}
+	if o.timeout <= 0 {
+		o.timeout = defaultHealthCheckTimeout
+	}
 	return func(w http.ResponseWriter, r *http.Request) {
-		ctx, cancel := context.WithTimeout(r.Context(), healthCheckTimeout)
+		ctx, cancel := context.WithTimeout(r.Context(), o.timeout)
 		defer cancel()
 		results := make(map[string]string, len(checkers))
 		var mu sync.Mutex

@@ -8,7 +8,7 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-// Paginated holds a page of items and pagination metadata for JSON responses.
+// Paginated holds a page of items and pagination metadata for JSON responses
 type Paginated[T any] struct {
 	Data       []T   `json:"data"`
 	Total      int64 `json:"total"`
@@ -17,7 +17,7 @@ type Paginated[T any] struct {
 	TotalPages int   `json:"total_pages"`
 }
 
-// NewPaginated builds a Paginated with TotalPages computed from total and perPage. Data is never nil in the result (empty slice if nil).
+// NewPaginated builds a Paginated with TotalPages computed from total and perPage. Data is never nil in the result (empty slice if nil)
 func NewPaginated[T any](data []T, total int64, page, perPage int) *Paginated[T] {
 	if data == nil {
 		data = make([]T, 0)
@@ -31,7 +31,9 @@ func NewPaginated[T any](data []T, total int64, page, perPage int) *Paginated[T]
 	}
 }
 
-// FetchPage runs fetchFn and countFn in parallel and returns a Paginated result. Page and perPage are clamped to at least 1.
+// FetchPage runs fetchFn and countFn in parallel using errgroup and returns a Paginated result
+// Page and perPage are clamped to at least 1. If either function returns an error the other is
+// cancelled via context and FetchPage returns that error
 func FetchPage[T any](
 	ctx context.Context,
 	page, perPage int,

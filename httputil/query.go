@@ -6,8 +6,8 @@ import (
 	"time"
 )
 
-// ParseBoolQuery parses the query parameter key as a boolean. Accepts "1", "true", "yes" for true and "0", "false", "no" for false.
-// Returns (value, true) when valid, (false, false) when missing or invalid.
+// ParseBoolQuery parses the query parameter key as a boolean. Accepts "1", "true", "yes" for true and "0", "false", "no" for false
+// Returns (value, true) when valid, (false, false) when missing or invalid
 func ParseBoolQuery(r *http.Request, key string) (bool, bool) {
 	q := strings.TrimSpace(strings.ToLower(r.URL.Query().Get(key)))
 	if q == "" {
@@ -23,7 +23,7 @@ func ParseBoolQuery(r *http.Request, key string) (bool, bool) {
 	}
 }
 
-// ParseEnumQuery parses the query parameter key and returns it as T if it is in allowed; otherwise returns ("", false).
+// ParseEnumQuery parses the query parameter key and returns it as T if it is in allowed; otherwise returns ("", false)
 func ParseEnumQuery[T ~string](r *http.Request, key string, allowed []T) (T, bool) {
 	q := strings.TrimSpace(r.URL.Query().Get(key))
 	if q == "" {
@@ -37,8 +37,8 @@ func ParseEnumQuery[T ~string](r *http.Request, key string, allowed []T) (T, boo
 	return "", false
 }
 
-// ParseSortQuery parses the "sort" query parameter. Supports "field", "-field", or "field:asc"/"field:desc".
-// Returns (field, dir, true) when field is in allowedFields and dir is "asc" or "desc"; otherwise ("", "", false).
+// ParseSortQuery parses the "sort" query parameter. Supports "field", "-field", or "field:asc"/"field:desc"
+// Returns (field, dir, true) when field is in allowedFields and dir is "asc" or "desc"; otherwise ("", "", false)
 func ParseSortQuery(r *http.Request, allowedFields []string) (field, dir string, ok bool) {
 	q := strings.TrimSpace(r.URL.Query().Get("sort"))
 	if q == "" {
@@ -48,21 +48,20 @@ func ParseSortQuery(r *http.Request, allowedFields []string) (field, dir string,
 	for _, f := range allowedFields {
 		allowedSet[f] = true
 	}
-	field = q
 	dir = "asc"
-	if strings.HasPrefix(q, "-") {
-		field = strings.TrimPrefix(q, "-")
+	if field, ok = strings.CutPrefix(q, "-"); ok {
 		if strings.Contains(field, ":") {
 			return "", "", false
 		}
 		dir = "desc"
-	} else if idx := strings.Index(field, ":"); idx >= 0 {
-		field, dir = field[:idx], field[idx+1:]
-		field = strings.TrimSpace(field)
-		dir = strings.TrimSpace(strings.ToLower(dir))
+	} else if f, d, found := strings.Cut(q, ":"); found {
+		field = strings.TrimSpace(f)
+		dir = strings.TrimSpace(strings.ToLower(d))
 		if dir != "asc" && dir != "desc" {
 			return "", "", false
 		}
+	} else {
+		field = q
 	}
 	if !allowedSet[field] {
 		return "", "", false
@@ -70,7 +69,7 @@ func ParseSortQuery(r *http.Request, allowedFields []string) (field, dir string,
 	return field, dir, true
 }
 
-// ParseTimeQuery parses the query parameter key with the given time layout (e.g. time.RFC3339). Returns (zero time.Time, false) on missing or invalid value.
+// ParseTimeQuery parses the query parameter key with the given time layout (e.g. time.RFC3339). Returns (zero time.Time, false) on missing or invalid value
 func ParseTimeQuery(r *http.Request, key, layout string) (time.Time, bool) {
 	q := strings.TrimSpace(r.URL.Query().Get(key))
 	if q == "" {

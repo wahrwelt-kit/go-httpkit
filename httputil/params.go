@@ -12,10 +12,10 @@ import (
 
 type contextKey string
 
-// UserIDKey is the context key for the authenticated user ID (string, e.g. UUID). Set by auth middleware; read with GetUserID.
+// UserIDKey is the context key for the authenticated user ID (string, e.g. UUID). Set by auth middleware; read with GetUserID
 const UserIDKey contextKey = "user_id"
 
-// GetUserID returns the authenticated user ID from context, or "" if not set.
+// GetUserID returns the authenticated user ID from context, or "" if not set
 func GetUserID(ctx context.Context) string {
 	if ctx == nil {
 		return ""
@@ -26,7 +26,7 @@ func GetUserID(ctx context.Context) string {
 	return ""
 }
 
-// ParseUUID parses id as a UUID. On failure writes an error response and returns (uuid.Nil, false).
+// ParseUUID parses id as a UUID. On failure writes an error response and returns (uuid.Nil, false)
 func ParseUUID(w http.ResponseWriter, r *http.Request, id string) (uuid.UUID, bool) {
 	if id == "" {
 		HandleError(w, r, httperr.ErrInvalidID())
@@ -40,8 +40,8 @@ func ParseUUID(w http.ResponseWriter, r *http.Request, id string) (uuid.UUID, bo
 	return parsed, true
 }
 
-// ParseUUIDField parses value as a UUID. On failure writes a validation error for the given field name and returns (uuid.Nil, false).
-// field is used in the error message sent to the client; it must be a constant or sanitized (e.g. alphanumeric, underscore). Do not pass user-controlled input as field.
+// ParseUUIDField parses value as a UUID. On failure writes a validation error for the given field name and returns (uuid.Nil, false)
+// field is used in the error message sent to the client; it must be a constant or sanitized (e.g. alphanumeric, underscore). Do not pass user-controlled input as field
 func ParseUUIDField(w http.ResponseWriter, r *http.Request, value, field string) (uuid.UUID, bool) {
 	parsed, err := uuid.Parse(value)
 	if err != nil {
@@ -68,7 +68,7 @@ func sanitizeValidationFieldName(s string) string {
 	return sb.String()
 }
 
-// ParseAuthUserID returns the authenticated user's UUID from context. Writes 401 and returns (uuid.Nil, false) if not authenticated or invalid.
+// ParseAuthUserID returns the authenticated user's UUID from context. Writes 401 and returns (uuid.Nil, false) if not authenticated or invalid
 func ParseAuthUserID(w http.ResponseWriter, r *http.Request) (uuid.UUID, bool) {
 	userID := GetUserID(r.Context())
 	if userID == "" {

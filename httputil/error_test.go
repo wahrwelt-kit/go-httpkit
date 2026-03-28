@@ -133,18 +133,18 @@ func TestHandleError_Nil(t *testing.T) {
 func TestValidationHTTPError_NilReceiver(t *testing.T) {
 	t.Parallel()
 	var e *ValidationHTTPError
-	assert.Equal(t, "", e.Error())
-	assert.Nil(t, e.Unwrap())
+	assert.Empty(t, e.Error())
+	require.NoError(t, e.Unwrap())
 	assert.Equal(t, 0, e.HTTPStatus())
-	assert.Equal(t, "", e.GetCode())
+	assert.Empty(t, e.GetCode())
 }
 
 func TestValidationHTTPError_NilHTTPError(t *testing.T) {
 	t.Parallel()
 	e := &ValidationHTTPError{HTTPError: nil}
-	assert.Equal(t, "", e.Error())
+	assert.Empty(t, e.Error())
 	assert.Equal(t, 0, e.HTTPStatus())
-	assert.Equal(t, "", e.GetCode())
+	assert.Empty(t, e.GetCode())
 }
 
 func TestErrorHandler_Handle_Nil(t *testing.T) {
@@ -209,8 +209,7 @@ func TestSanitizeValidationFieldName(t *testing.T) {
 func BenchmarkHandleError_HTTPError(b *testing.B) {
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
 	err := httperr.New(errors.New("not found"), http.StatusNotFound, "NOT_FOUND")
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		w := httptest.NewRecorder()
 		HandleError(w, r, err)
 	}
@@ -219,8 +218,7 @@ func BenchmarkHandleError_HTTPError(b *testing.B) {
 func BenchmarkHandleError_GenericError(b *testing.B) {
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
 	err := errors.New("internal failure")
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		w := httptest.NewRecorder()
 		HandleError(w, r, err)
 	}

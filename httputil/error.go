@@ -10,14 +10,14 @@ import (
 	logger "github.com/wahrwelt-kit/go-logkit"
 )
 
-// ErrorHandler handles errors by optionally logging and writing a JSON error response via HandleError.
+// ErrorHandler handles errors by optionally logging and writing a JSON error response via HandleError
 type ErrorHandler struct {
-	// Logger is optional; when set, Handle logs 4xx at Info and 5xx at Error.
+	// Logger is optional; when set, Handle logs 4xx at Info and 5xx at Error
 	Logger logger.Logger
 }
 
-// Handle logs err (if Logger is set) and writes a JSON error response. Returns true if err was non-nil and handled.
-// 4xx errors are logged at Info level, everything else at Error level.
+// Handle logs err (if Logger is set) and writes a JSON error response. Returns true if err was non-nil and handled
+// 4xx errors are logged at Info level, everything else at Error level
 func (h *ErrorHandler) Handle(w http.ResponseWriter, r *http.Request, err error, msg string) bool {
 	if err == nil {
 		return false
@@ -34,26 +34,26 @@ func (h *ErrorHandler) Handle(w http.ResponseWriter, r *http.Request, err error,
 	return true
 }
 
-// ErrorResponse is the JSON body for a single error (code and message).
+// ErrorResponse is the JSON body for a single error (code and message)
 type ErrorResponse struct {
 	Code    string `json:"code"`
 	Message string `json:"message"`
 }
 
-// ValidationErrorItem is one field-level validation error.
+// ValidationErrorItem is one field-level validation error
 type ValidationErrorItem struct {
 	Field   string `json:"field"`
 	Message string `json:"message"`
 }
 
-// ValidationErrorResponse is the JSON body for validation errors (code, message, and optional per-field errors).
+// ValidationErrorResponse is the JSON body for validation errors (code, message, and optional per-field errors)
 type ValidationErrorResponse struct {
 	Code    string                `json:"code"`
 	Message string                `json:"message"`
 	Errors  []ValidationErrorItem `json:"errors,omitempty"`
 }
 
-// ValidationHTTPError is an HTTPError that carries per-field validation errors for JSON responses.
+// ValidationHTTPError is an HTTPError that carries per-field validation errors for JSON responses
 type ValidationHTTPError struct {
 	*httperr.HTTPError
 	Errors []ValidationErrorItem
@@ -65,18 +65,23 @@ func (e *ValidationHTTPError) Error() string {
 	}
 	return e.HTTPError.Error()
 }
+
 func (e *ValidationHTTPError) Unwrap() error {
 	if e == nil {
 		return nil
 	}
 	return e.HTTPError
 }
+
+// HTTPStatus returns the HTTP status code for the validation error, or 0 if the receiver or HTTPError is nil
 func (e *ValidationHTTPError) HTTPStatus() int {
 	if e == nil || e.HTTPError == nil {
 		return 0
 	}
 	return e.HTTPError.HTTPStatus()
 }
+
+// GetCode returns the error code for the validation error, or "" if the receiver or HTTPError is nil
 func (e *ValidationHTTPError) GetCode() string {
 	if e == nil || e.HTTPError == nil {
 		return ""
@@ -85,8 +90,8 @@ func (e *ValidationHTTPError) GetCode() string {
 }
 
 // HandleError writes a JSON error response. If err implements HTTPStatus and GetCode (e.g. *httperr.HTTPError),
-// that status and code are used; otherwise 500 and INTERNAL_ERROR. For 5xx the message is replaced with "Internal server error".
-// ValidationHTTPError is rendered as ValidationErrorResponse with per-field errors.
+// that status and code are used; otherwise 500 and INTERNAL_ERROR. For 5xx the message is replaced with "Internal server error"
+// ValidationHTTPError is rendered as ValidationErrorResponse with per-field errors
 func HandleError(w http.ResponseWriter, r *http.Request, err error) {
 	if err == nil || w == nil || r == nil {
 		return
