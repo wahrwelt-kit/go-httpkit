@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/go-chi/render"
+
 	"github.com/wahrwelt-kit/go-httpkit/httperr"
 	logger "github.com/wahrwelt-kit/go-logkit"
 )

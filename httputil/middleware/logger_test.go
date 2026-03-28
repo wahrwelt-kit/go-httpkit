@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+
 	logger "github.com/wahrwelt-kit/go-logkit"
 	logmock "github.com/wahrwelt-kit/go-logkit/mock"
 )

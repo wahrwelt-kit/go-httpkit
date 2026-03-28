@@ -10,6 +10,7 @@ import (
 	playvalidator "github.com/go-playground/validator/v10"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
 	"github.com/wahrwelt-kit/go-httpkit/httperr"
 )
 

@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/go-chi/render"
+
 	"github.com/wahrwelt-kit/go-httpkit/httperr"
 )
 

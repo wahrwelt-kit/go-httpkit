@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
+
 	logger "github.com/wahrwelt-kit/go-logkit"
 )
 

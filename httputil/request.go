@@ -9,6 +9,7 @@ import (
 
 	"github.com/go-chi/render"
 	playvalidator "github.com/go-playground/validator/v10"
+
 	"github.com/wahrwelt-kit/go-httpkit/httperr"
 )
 
