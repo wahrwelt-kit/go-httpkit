@@ -10,7 +10,7 @@ require (
 	github.com/nicksnyder/go-i18n/v2 v2.6.1
 	github.com/prometheus/client_golang v1.23.2
 	github.com/stretchr/testify v1.11.1
-	github.com/wahrwelt-kit/go-logkit v0.4.0
+	github.com/wahrwelt-kit/go-logkit v0.4.1
 	golang.org/x/sync v0.20.0
 	golang.org/x/text v0.35.0
 )
