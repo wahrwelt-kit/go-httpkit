@@ -4,8 +4,6 @@ import (
 	"context"
 	"errors"
 	"math"
-
-	"golang.org/x/sync/errgroup"
 )
 
 // Paginated holds a page of items and pagination metadata for JSON responses.
@@ -31,7 +29,7 @@ func NewPaginated[T any](data []T, total int64, page, perPage int) *Paginated[T]
 	}
 }
 
-// FetchPage runs fetchFn and countFn in parallel and returns a Paginated result. Page and perPage are clamped to at least 1.
+// FetchPage runs fetchFn then countFn sequentially and returns a Paginated result. Page and perPage are clamped to at least 1.
 func FetchPage[T any](
 	ctx context.Context,
 	page, perPage int,
@@ -52,22 +50,15 @@ func FetchPage[T any](
 		offset64 = math.MaxInt
 	}
 	offset := int(offset64)
-	var items []T
-	var total int64
-
-	g, gCtx := errgroup.WithContext(ctx)
-	g.Go(func() error {
-		var err error
-		items, err = fetchFn(gCtx, perPage, offset)
-		return err
-	})
-	g.Go(func() error {
-		var err error
-		total, err = countFn(gCtx)
-		return err
-	})
-	if err := g.Wait(); err != nil {
+	items, err := fetchFn(ctx, perPage, offset)
+	if err != nil {
 		return nil, err
 	}
+
+	total, err := countFn(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	return NewPaginated(items, total, page, perPage), nil
 }
