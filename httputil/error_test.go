@@ -96,7 +96,7 @@ func TestHandleError_ValidationHTTPError(t *testing.T) {
 	err := &ValidationHTTPError{
 		HTTPError: httperr.New(errors.New("validation failed"), http.StatusBadRequest, "VALIDATION_ERROR"),
 		Errors: []ValidationErrorItem{
-			{Field: "email", Message: "Invalid format"},
+			{Field: tagEmail, Message: "Invalid format"},
 		},
 	}
 	HandleError(w, r, err)
@@ -106,7 +106,7 @@ func TestHandleError_ValidationHTTPError(t *testing.T) {
 	assert.Equal(t, "VALIDATION_ERROR", body.Code)
 	assert.Equal(t, "Validation failed", body.Message)
 	require.Len(t, body.Errors, 1)
-	assert.Equal(t, "email", body.Errors[0].Field)
+	assert.Equal(t, tagEmail, body.Errors[0].Field)
 	assert.Equal(t, "Invalid format", body.Errors[0].Message)
 }
 
@@ -194,7 +194,7 @@ func TestSanitizeValidationFieldName(t *testing.T) {
 		in   string
 		want string
 	}{
-		{"email", "email"},
+		{tagEmail, tagEmail},
 		{"user_id", "user_id"},
 		{"<script>", "script"},
 		{"", "field"},

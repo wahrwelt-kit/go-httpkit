@@ -158,8 +158,8 @@ func TimeoutWithLimit(d time.Duration, maxResponseBytes int64, log ...logger.Log
 				case <-timer.C:
 					if panicLog != nil {
 						panicLog.Warn("timeout middleware: handler goroutine did not finish within grace period", logger.Fields{
-							"path":         r.URL.Path,
-							"method":       r.Method,
+							keyPath:        r.URL.Path,
+							keyMethod:      r.Method,
 							"timeout":      d.String(),
 							"grace_period": timeoutGracePeriod.String(),
 						})

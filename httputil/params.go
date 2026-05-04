@@ -63,7 +63,7 @@ func sanitizeValidationFieldName(s string) string {
 		}
 	}
 	if sb.Len() == 0 {
-		return "field"
+		return defaultFieldName
 	}
 	return sb.String()
 }

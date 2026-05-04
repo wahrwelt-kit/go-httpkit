@@ -17,7 +17,7 @@ import (
 const MaxRequestBodySize = 1 << 20
 
 // ErrRequestBodyTooLarge is returned by DecodeJSON when the request body exceeds the configured limit
-var ErrRequestBodyTooLarge = errors.New("request body too large")
+var ErrRequestBodyTooLarge = errors.New(msgBodyTooLarge)
 
 type decodeConfig struct {
 	maxBodySize int64
@@ -91,11 +91,19 @@ func sanitizeValidationField(field string) string {
 	return field
 }
 
+// Validator tag values recognised by sanitizeValidationMessage
+const (
+	tagRequired    = "required"
+	tagNotEmpty    = "not_empty"
+	tagEmail       = "email"
+	tagCustomEmail = "custom_email"
+)
+
 func sanitizeValidationMessage(e playvalidator.FieldError) string {
 	switch e.Tag() {
-	case "required", "not_empty":
+	case tagRequired, tagNotEmpty:
 		return "Required"
-	case "email", "custom_email":
+	case tagEmail, tagCustomEmail:
 		return "Invalid format"
 	default:
 		return "Invalid value"
@@ -122,13 +130,13 @@ func DecodeAndValidate[T any](w http.ResponseWriter, r *http.Request, v Validato
 		if w != nil {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusBadRequest)
-			_ = json.NewEncoder(w).Encode(ErrorResponse{Code: "BAD_REQUEST", Message: "request or response writer is nil"}) //nolint:errchkjson // best-effort error response when request is nil
+			_ = json.NewEncoder(w).Encode(ErrorResponse{Code: httperr.CodeBadRequest, Message: "request or response writer is nil"}) //nolint:errchkjson // best-effort error response when request is nil
 		}
 		return req, false
 	}
 	if r.Body == nil {
 		render.Status(r, http.StatusBadRequest)
-		render.JSON(w, r, ErrorResponse{Code: "BAD_REQUEST", Message: "request body is nil"})
+		render.JSON(w, r, ErrorResponse{Code: httperr.CodeBadRequest, Message: "request body is nil"})
 		return req, false
 	}
 	hitLimit := false
@@ -137,12 +145,12 @@ func DecodeAndValidate[T any](w http.ResponseWriter, r *http.Request, v Validato
 	dec.DisallowUnknownFields()
 	if err := dec.Decode(&req); err != nil {
 		render.Status(r, http.StatusBadRequest)
-		render.JSON(w, r, ErrorResponse{Code: "INVALID_JSON", Message: "invalid JSON format"})
+		render.JSON(w, r, ErrorResponse{Code: httperr.CodeInvalidJSON, Message: "invalid JSON format"})
 		return req, false
 	}
 	if hitLimit {
 		render.Status(r, http.StatusRequestEntityTooLarge)
-		render.JSON(w, r, ErrorResponse{Code: "REQUEST_ENTITY_TOO_LARGE", Message: "request body too large"})
+		render.JSON(w, r, ErrorResponse{Code: httperr.CodeRequestEntityTooLarge, Message: msgBodyTooLarge})
 		return req, false
 	}
 	buf := make([]byte, 1)
@@ -150,26 +158,25 @@ func DecodeAndValidate[T any](w http.ResponseWriter, r *http.Request, v Validato
 		_, _ = io.Copy(io.Discard, limited)
 		if hitLimit {
 			render.Status(r, http.StatusRequestEntityTooLarge)
-			render.JSON(w, r, ErrorResponse{Code: "REQUEST_ENTITY_TOO_LARGE", Message: "request body too large"})
+			render.JSON(w, r, ErrorResponse{Code: httperr.CodeRequestEntityTooLarge, Message: msgBodyTooLarge})
 			return req, false
 		}
 		render.Status(r, http.StatusBadRequest)
-		render.JSON(w, r, ErrorResponse{Code: "INVALID_JSON", Message: "trailing data after JSON"})
+		render.JSON(w, r, ErrorResponse{Code: httperr.CodeInvalidJSON, Message: "trailing data after JSON"})
 		return req, false
 	}
 	if v == nil {
 		render.Status(r, http.StatusInternalServerError)
-		render.JSON(w, r, ErrorResponse{Code: "INTERNAL_ERROR", Message: msgInternalServerError})
+		render.JSON(w, r, ErrorResponse{Code: httperr.CodeInternalError, Message: msgInternalServerError})
 		return req, false
 	}
 	if err := v.Validate(req); err != nil {
 		render.Status(r, http.StatusBadRequest)
-		var valErr playvalidator.ValidationErrors
-		if errors.As(err, &valErr) {
+		if valErr, ok := errors.AsType[playvalidator.ValidationErrors](err); ok {
 			items := validationErrorsToItems(valErr)
-			render.JSON(w, r, ValidationErrorResponse{Code: "VALIDATION_ERROR", Message: "Validation failed", Errors: items})
+			render.JSON(w, r, ValidationErrorResponse{Code: httperr.CodeValidationError, Message: msgValidationFailed, Errors: items})
 		} else {
-			render.JSON(w, r, ErrorResponse{Code: "VALIDATION_ERROR", Message: "Validation failed"})
+			render.JSON(w, r, ErrorResponse{Code: httperr.CodeValidationError, Message: msgValidationFailed})
 		}
 		return req, false
 	}
@@ -183,39 +190,38 @@ func DecodeAndValidateE[T any](r *http.Request, v Validator, opts ...DecodeOptio
 	var req T
 	cfg := applyDecodeOptions(opts)
 	if r == nil || r.Body == nil {
-		return req, httperr.New(errors.New("request or body is nil"), http.StatusBadRequest, "BAD_REQUEST")
+		return req, httperr.New(errors.New("request or body is nil"), http.StatusBadRequest, httperr.CodeBadRequest)
 	}
 	hitLimit := false
 	limited := &limitTrackingReader{r: r.Body, limit: cfg.maxBodySize + 1, hitLimit: &hitLimit}
 	dec := json.NewDecoder(limited)
 	dec.DisallowUnknownFields()
 	if err := dec.Decode(&req); err != nil {
-		return req, httperr.New(errors.New("invalid JSON in request body"), http.StatusBadRequest, "INVALID_JSON")
+		return req, httperr.New(errors.New("invalid JSON in request body"), http.StatusBadRequest, httperr.CodeInvalidJSON)
 	}
 	if hitLimit {
-		return req, httperr.New(errors.New("request body too large"), http.StatusRequestEntityTooLarge, "REQUEST_ENTITY_TOO_LARGE")
+		return req, httperr.New(errors.New(msgBodyTooLarge), http.StatusRequestEntityTooLarge, httperr.CodeRequestEntityTooLarge)
 	}
 	buf := make([]byte, 1)
 	if n, _ := limited.Read(buf); n > 0 || rejectTrailingJSON(limited, dec) {
 		_, _ = io.Copy(io.Discard, limited)
 		if hitLimit {
-			return req, httperr.New(errors.New("request body too large"), http.StatusRequestEntityTooLarge, "REQUEST_ENTITY_TOO_LARGE")
+			return req, httperr.New(errors.New(msgBodyTooLarge), http.StatusRequestEntityTooLarge, httperr.CodeRequestEntityTooLarge)
 		}
-		return req, httperr.New(errors.New("trailing data after JSON"), http.StatusBadRequest, "INVALID_JSON")
+		return req, httperr.New(errors.New("trailing data after JSON"), http.StatusBadRequest, httperr.CodeInvalidJSON)
 	}
 	if v == nil {
-		return req, httperr.New(errors.New("validator is nil"), http.StatusInternalServerError, "INTERNAL_ERROR")
+		return req, httperr.New(errors.New("validator is nil"), http.StatusInternalServerError, httperr.CodeInternalError)
 	}
 	if err := v.Validate(req); err != nil {
-		var valErr playvalidator.ValidationErrors
-		if errors.As(err, &valErr) {
+		if valErr, ok := errors.AsType[playvalidator.ValidationErrors](err); ok {
 			items := validationErrorsToItems(valErr)
 			return req, &ValidationHTTPError{
-				HTTPError: httperr.New(err, http.StatusBadRequest, "VALIDATION_ERROR"),
+				HTTPError: httperr.New(err, http.StatusBadRequest, httperr.CodeValidationError),
 				Errors:    items,
 			}
 		}
-		return req, httperr.New(errors.New("validation failed"), http.StatusBadRequest, "VALIDATION_ERROR")
+		return req, httperr.New(errors.New("validation failed"), http.StatusBadRequest, httperr.CodeValidationError)
 	}
 	return req, nil
 }

@@ -65,7 +65,7 @@ func RenderInvalidID(w http.ResponseWriter, r *http.Request) {
 }
 
 var safeTextContentTypes = map[string]struct{}{
-	"text/plain": {}, "application/json": {}, "application/octet-stream": {},
+	mimeTextPlain: {}, "application/json": {}, "application/octet-stream": {},
 }
 
 // RenderText writes a plain text response with the given status, Content-Type, and body

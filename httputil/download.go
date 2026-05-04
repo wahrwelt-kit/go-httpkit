@@ -60,7 +60,7 @@ func RenderJSONAttachment[T any](w http.ResponseWriter, data T, filename string)
 		return fmt.Errorf("encode json attachment: %w", err)
 	}
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.Header().Set("Content-Disposition", mime.FormatMediaType("attachment", map[string]string{"filename": sanitizeContentDispositionFilename(filename)}))
+	w.Header().Set("Content-Disposition", mime.FormatMediaType("attachment", map[string]string{paramFilename: sanitizeContentDispositionFilename(filename)}))
 	_, err := w.Write(buf.Bytes())
 	return err
 }
@@ -85,7 +85,7 @@ func RenderStreamLimited(w http.ResponseWriter, contentType, filename string, rc
 		return err
 	}
 	w.Header().Set("Content-Type", ct)
-	w.Header().Set("Content-Disposition", mime.FormatMediaType("attachment", map[string]string{"filename": sanitizeContentDispositionFilename(filename)}))
+	w.Header().Set("Content-Disposition", mime.FormatMediaType("attachment", map[string]string{paramFilename: sanitizeContentDispositionFilename(filename)}))
 	reader := rc
 	if maxBytes > 0 {
 		reader = io.LimitReader(rc, maxBytes)
@@ -114,7 +114,7 @@ func RenderBytes(w http.ResponseWriter, contentType, filename string, data []byt
 		return err
 	}
 	w.Header().Set("Content-Type", ct)
-	w.Header().Set("Content-Disposition", mime.FormatMediaType("attachment", map[string]string{"filename": sanitizeContentDispositionFilename(filename)}))
+	w.Header().Set("Content-Disposition", mime.FormatMediaType("attachment", map[string]string{paramFilename: sanitizeContentDispositionFilename(filename)}))
 	_, err = w.Write(data)
 	return err
 }

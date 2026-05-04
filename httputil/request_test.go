@@ -347,12 +347,13 @@ func TestDecodeAndValidate_WithMaxBodySize(t *testing.T) {
 
 func TestSanitizeValidationField(t *testing.T) {
 	t.Parallel()
+	const fieldEmail = "Email"
 	tests := []struct {
 		in   string
 		want string
 	}{
-		{"Email", "Email"},
-		{"User.Email", "Email"},
+		{fieldEmail, fieldEmail},
+		{"User.Email", fieldEmail},
 		{"a.b.c", "c"},
 		{"X", "X"},
 	}

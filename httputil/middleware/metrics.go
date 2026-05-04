@@ -28,7 +28,7 @@ func Metrics(reg prometheus.Registerer, pathFromRequest PathFromRequest, log ...
 			Name: "http_requests_total",
 			Help: "Total number of HTTP requests",
 		},
-		[]string{"method", "path", "status"},
+		[]string{keyMethod, keyPath, keyStatus},
 	)
 	requestDuration := prometheus.NewHistogramVec(
 		prometheus.HistogramOpts{
@@ -36,11 +36,10 @@ func Metrics(reg prometheus.Registerer, pathFromRequest PathFromRequest, log ...
 			Help:    "HTTP request duration in seconds",
 			Buckets: prometheus.DefBuckets,
 		},
-		[]string{"method", "path", "status"},
+		[]string{keyMethod, keyPath, keyStatus},
 	)
 	if err := reg.Register(requestsTotal); err != nil {
-		var are prometheus.AlreadyRegisteredError
-		if errors.As(err, &are) {
+		if are, ok := errors.AsType[prometheus.AlreadyRegisteredError](err); ok {
 			if cv, ok := are.ExistingCollector.(*prometheus.CounterVec); ok {
 				requestsTotal = cv
 			} else if l != nil {
@@ -51,8 +50,7 @@ func Metrics(reg prometheus.Registerer, pathFromRequest PathFromRequest, log ...
 		}
 	}
 	if err := reg.Register(requestDuration); err != nil {
-		var are prometheus.AlreadyRegisteredError
-		if errors.As(err, &are) {
+		if are, ok := errors.AsType[prometheus.AlreadyRegisteredError](err); ok {
 			if hv, ok := are.ExistingCollector.(*prometheus.HistogramVec); ok {
 				requestDuration = hv
 			} else if l != nil {

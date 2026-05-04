@@ -78,19 +78,20 @@ func TestClampLimit(t *testing.T) {
 
 func TestParseIntQuery(t *testing.T) {
 	t.Parallel()
+	const queryPage = "page"
 	tests := []struct {
 		rawURL  string
 		key     string
 		wantNil bool
 		wantVal int
 	}{
-		{"http://localhost/?page=1", "page", false, 1},
-		{"http://localhost/?page=42", "page", false, 42},
-		{"http://localhost/?x=1", "page", true, 0},
-		{"http://localhost/", "page", true, 0},
-		{"http://localhost/?page=0", "page", true, 0},
-		{"http://localhost/?page=-1", "page", true, 0},
-		{"http://localhost/?page=abc", "page", true, 0},
+		{"http://localhost/?page=1", queryPage, false, 1},
+		{"http://localhost/?page=42", queryPage, false, 42},
+		{"http://localhost/?x=1", queryPage, true, 0},
+		{"http://localhost/", queryPage, true, 0},
+		{"http://localhost/?page=0", queryPage, true, 0},
+		{"http://localhost/?page=-1", queryPage, true, 0},
+		{"http://localhost/?page=abc", queryPage, true, 0},
 	}
 	for _, tt := range tests {
 		r, _ := http.NewRequest(http.MethodGet, tt.rawURL, http.NoBody)

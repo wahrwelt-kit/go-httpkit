@@ -15,13 +15,13 @@ func ParseMultipartFormLimit(w http.ResponseWriter, r *http.Request, maxBodySize
 		r.Body = http.NoBody
 	}
 	r.Body = http.MaxBytesReader(w, r.Body, maxBodySize)
-	if err := r.ParseMultipartForm(maxMemory); err != nil {
-		var maxBytesErr *http.MaxBytesError
-		if errors.As(err, &maxBytesErr) {
-			HandleError(w, r, httperr.New(errors.New("request body too large"), http.StatusRequestEntityTooLarge, "REQUEST_ENTITY_TOO_LARGE"))
+	// G120 is bounded by http.MaxBytesReader on the line above; gosec does not see the wrapper
+	if err := r.ParseMultipartForm(maxMemory); err != nil { //nolint:gosec // body is bounded by http.MaxBytesReader above
+		if _, ok := errors.AsType[*http.MaxBytesError](err); ok {
+			HandleError(w, r, httperr.New(errors.New(msgBodyTooLarge), http.StatusRequestEntityTooLarge, httperr.CodeRequestEntityTooLarge))
 			return false
 		}
-		HandleError(w, r, httperr.New(errors.New("invalid multipart form"), http.StatusBadRequest, "VALIDATION_ERROR"))
+		HandleError(w, r, httperr.New(errors.New("invalid multipart form"), http.StatusBadRequest, httperr.CodeValidationError))
 		return false
 	}
 	return true

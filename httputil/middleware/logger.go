@@ -122,8 +122,8 @@ func Logger(log logger.Logger, trustedProxyCIDRs []string, opts ...LoggerOption)
 			start := time.Now()
 
 			fields := map[string]any{
-				"method":     r.Method,
-				"path":       r.URL.Path,
+				keyMethod:    r.Method,
+				keyPath:      r.URL.Path,
 				"query":      redactQuery(r.URL.RawQuery, sensitive),
 				"ip":         clientIPForLog(r, trustedNets),
 				"user_agent": r.UserAgent(),
@@ -139,7 +139,7 @@ func Logger(log logger.Logger, trustedProxyCIDRs []string, opts ...LoggerOption)
 
 			latency := time.Since(start)
 			reqLogger = reqLogger.WithFields(logger.Fields{
-				"status":     ww.Status(),
+				keyStatus:    ww.Status(),
 				"latency_ms": latency.Milliseconds(),
 				"bytes":      ww.BytesWritten(),
 			})

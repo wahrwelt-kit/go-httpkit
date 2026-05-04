@@ -7,6 +7,7 @@ import (
 
 func TestEscapeILIKE(t *testing.T) {
 	t.Parallel()
+	const escapedPercent = `a\%b`
 	tests := []struct {
 		name   string
 		s      string
@@ -14,11 +15,11 @@ func TestEscapeILIKE(t *testing.T) {
 		want   string
 	}{
 		{"backslash", `a\b`, 10, `a\\b`},
-		{"percent", "a%b", 10, `a\%b`},
+		{"percent", "a%b", 10, escapedPercent},
 		{"underscore", "a_b", 10, `a\_b`},
 		{"mixed", `%\_\`, 10, "\\%\\\\\\_\\\\"},
 		{"truncate", "abcdefghij", 5, "abcde"},
-		{"zero maxLen uses default", "a%b", 0, `a\%b`},
+		{"zero maxLen uses default", "a%b", 0, escapedPercent},
 	}
 	for _, tt := range tests {
 		got := EscapeILIKE(tt.s, tt.maxLen)
@@ -51,10 +52,10 @@ func TestValidateSearchQ(t *testing.T) {
 
 func TestSanitizeSearchQ(t *testing.T) {
 	t.Parallel()
+	const escapedPercent = `a\%b`
 	got := SanitizeSearchQ("a%b", 100)
-	want := `a\%b`
-	if got != want {
-		t.Errorf("SanitizeSearchQ(%q, 100) = %q, want %q", "a%b", got, want)
+	if got != escapedPercent {
+		t.Errorf("SanitizeSearchQ(%q, 100) = %q, want %q", "a%b", got, escapedPercent)
 	}
 }
 

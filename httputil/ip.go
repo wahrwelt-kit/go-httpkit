@@ -5,7 +5,14 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"slices"
 	"strings"
+)
+
+// Forwarding header names used by GetClientIPWithNets when RemoteAddr matches a trusted proxy
+const (
+	headerXRealIP       = "X-Real-IP"
+	headerXForwardedFor = "X-Forwarded-For"
 )
 
 // ParseTrustedProxyCIDRs parses CIDR strings into networks. Invalid or empty entries are skipped
@@ -49,16 +56,16 @@ func GetClientIPWithNets(r *http.Request, trustedNets []*net.IPNet) string {
 	if !isIPInNets(remoteIP, trustedNets) {
 		return remoteIP
 	}
-	if ip := r.Header.Get("X-Real-IP"); ip != "" {
+	if ip := r.Header.Get(headerXRealIP); ip != "" {
 		ipStr := strings.TrimSpace(strings.Split(ip, ",")[0])
 		if parsed := net.ParseIP(ipStr); parsed != nil && !isIPInNets(ipStr, trustedNets) {
 			return ipStr
 		}
 	}
-	if fwd := r.Header.Get("X-Forwarded-For"); fwd != "" {
+	if fwd := r.Header.Get(headerXForwardedFor); fwd != "" {
 		parts := strings.Split(fwd, ",")
-		for i := len(parts) - 1; i >= 0; i-- {
-			ipStr := strings.TrimSpace(parts[i])
+		for _, part := range slices.Backward(parts) {
+			ipStr := strings.TrimSpace(part)
 			if ipStr == "" || net.ParseIP(ipStr) == nil {
 				continue
 			}

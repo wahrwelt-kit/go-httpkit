@@ -13,6 +13,8 @@ import (
 	"golang.org/x/text/language"
 )
 
+const testMsgGreeting = "greeting"
+
 // newTestBundle creates a bundle with English (default) and French translations
 // Uses the flat JSON format supported by go-i18n v2: {"MessageID": "translation"}
 func newTestBundle(t *testing.T) *i18n.Bundle {
@@ -37,7 +39,7 @@ func TestI18n_AcceptLanguageHeader(t *testing.T) {
 	bundle := newTestBundle(t)
 	var got string
 	handler := I18n(bundle)(http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
-		got = Localize(r.Context(), &i18n.LocalizeConfig{MessageID: "greeting"})
+		got = Localize(r.Context(), &i18n.LocalizeConfig{MessageID: testMsgGreeting})
 	}))
 	req := httptest.NewRequest(http.MethodGet, "/", http.NoBody)
 	req.Header.Set("Accept-Language", "fr")
@@ -50,7 +52,7 @@ func TestI18n_AcceptLanguageWithQValues(t *testing.T) {
 	bundle := newTestBundle(t)
 	var got string
 	handler := I18n(bundle)(http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
-		got = Localize(r.Context(), &i18n.LocalizeConfig{MessageID: "greeting"})
+		got = Localize(r.Context(), &i18n.LocalizeConfig{MessageID: testMsgGreeting})
 	}))
 	req := httptest.NewRequest(http.MethodGet, "/", http.NoBody)
 	req.Header.Set("Accept-Language", "en-US,en;q=0.9,fr;q=0.8") // en wins
@@ -63,7 +65,7 @@ func TestI18n_FallsBackToDefaultBundleLanguage(t *testing.T) {
 	bundle := newTestBundle(t)
 	var got string
 	handler := I18n(bundle)(http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
-		got = Localize(r.Context(), &i18n.LocalizeConfig{MessageID: "greeting"})
+		got = Localize(r.Context(), &i18n.LocalizeConfig{MessageID: testMsgGreeting})
 	}))
 	req := httptest.NewRequest(http.MethodGet, "/", http.NoBody)
 	req.Header.Set("Accept-Language", "de") // not in bundle -> falls back to English
@@ -76,7 +78,7 @@ func TestI18n_QueryParamOverridesHeader(t *testing.T) {
 	bundle := newTestBundle(t)
 	var got string
 	handler := I18n(bundle, WithLanguageQueryParam("lang"))(http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
-		got = Localize(r.Context(), &i18n.LocalizeConfig{MessageID: "greeting"})
+		got = Localize(r.Context(), &i18n.LocalizeConfig{MessageID: testMsgGreeting})
 	}))
 	req := httptest.NewRequest(http.MethodGet, "/?lang=fr", http.NoBody)
 	req.Header.Set("Accept-Language", "en")
@@ -89,7 +91,7 @@ func TestI18n_CookieOverridesQueryAndHeader(t *testing.T) {
 	bundle := newTestBundle(t)
 	var got string
 	handler := I18n(bundle, WithLanguageCookie("lang"), WithLanguageQueryParam("lang"))(http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
-		got = Localize(r.Context(), &i18n.LocalizeConfig{MessageID: "greeting"})
+		got = Localize(r.Context(), &i18n.LocalizeConfig{MessageID: testMsgGreeting})
 	}))
 	req := httptest.NewRequest(http.MethodGet, "/?lang=en", http.NoBody)
 	req.Header.Set("Accept-Language", "en")
@@ -103,7 +105,7 @@ func TestI18n_QueryParamIgnoredWhenNotConfigured(t *testing.T) {
 	bundle := newTestBundle(t)
 	var got string
 	handler := I18n(bundle)(http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
-		got = Localize(r.Context(), &i18n.LocalizeConfig{MessageID: "greeting"})
+		got = Localize(r.Context(), &i18n.LocalizeConfig{MessageID: testMsgGreeting})
 	}))
 	req := httptest.NewRequest(http.MethodGet, "/?lang=fr", http.NoBody)
 	req.Header.Set("Accept-Language", "en")
@@ -116,7 +118,7 @@ func TestI18n_CookieIgnoredWhenNotConfigured(t *testing.T) {
 	bundle := newTestBundle(t)
 	var got string
 	handler := I18n(bundle)(http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
-		got = Localize(r.Context(), &i18n.LocalizeConfig{MessageID: "greeting"})
+		got = Localize(r.Context(), &i18n.LocalizeConfig{MessageID: testMsgGreeting})
 	}))
 	req := httptest.NewRequest(http.MethodGet, "/", http.NoBody)
 	req.Header.Set("Accept-Language", "en")
@@ -150,14 +152,14 @@ func TestGetLocalizer_NotSet(t *testing.T) {
 func TestLocalize_NoLocalizerInContext_ReturnsDefault(t *testing.T) {
 	t.Parallel()
 	got := Localize(context.Background(), &i18n.LocalizeConfig{
-		DefaultMessage: &i18n.Message{ID: "greeting", Other: "Hello"},
+		DefaultMessage: &i18n.Message{ID: testMsgGreeting, Other: "Hello"},
 	})
 	assert.Equal(t, "Hello", got)
 }
 
 func TestLocalize_NoLocalizerNoDefault_ReturnsEmpty(t *testing.T) {
 	t.Parallel()
-	got := Localize(context.Background(), &i18n.LocalizeConfig{MessageID: "greeting"})
+	got := Localize(context.Background(), &i18n.LocalizeConfig{MessageID: testMsgGreeting})
 	assert.Empty(t, got)
 }
 

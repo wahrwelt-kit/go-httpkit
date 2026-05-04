@@ -6,31 +6,31 @@ import (
 )
 
 // CodeFromStatus returns the default application error code for the given HTTP status
-// (e.g. 404 ->  "NOT_FOUND", 500 ->  "INTERNAL_ERROR")
+// (e.g. 404 ->  CodeNotFound, 500 ->  CodeInternalError)
 func CodeFromStatus(status int) string {
 	switch status {
 	case http.StatusBadRequest:
-		return "BAD_REQUEST"
+		return CodeBadRequest
 	case http.StatusUnauthorized:
-		return "UNAUTHORIZED"
+		return CodeUnauthorized
 	case http.StatusForbidden:
-		return "FORBIDDEN"
+		return CodeForbidden
 	case http.StatusNotFound:
-		return "NOT_FOUND"
+		return CodeNotFound
 	case http.StatusConflict:
-		return "CONFLICT"
+		return CodeConflict
 	case http.StatusGone:
-		return "GONE"
+		return CodeGone
 	case http.StatusPaymentRequired:
-		return "PAYMENT_REQUIRED"
+		return CodePaymentRequired
 	case http.StatusUnprocessableEntity:
-		return "VALIDATION_ERROR"
+		return CodeValidationError
 	case http.StatusTooManyRequests:
-		return "RATE_LIMIT_EXCEEDED"
+		return CodeRateLimitExceeded
 	case http.StatusServiceUnavailable:
-		return "SERVICE_UNAVAILABLE"
+		return CodeServiceUnavailable
 	default:
-		return "INTERNAL_ERROR"
+		return CodeInternalError
 	}
 }
 
@@ -98,8 +98,7 @@ func New(err error, status int, code string) *HTTPError {
 
 // IsExpectedClientError reports whether err is an HTTPError with status 4xx (client error)
 func IsExpectedClientError(err error) bool {
-	var he *HTTPError
-	if errors.As(err, &he) {
+	if he, ok := errors.AsType[*HTTPError](err); ok {
 		return he.isClientError
 	}
 	return false

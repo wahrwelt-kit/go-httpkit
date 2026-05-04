@@ -12,18 +12,18 @@ func TestCodeFromStatus(t *testing.T) {
 		status int
 		want   string
 	}{
-		{http.StatusBadRequest, "BAD_REQUEST"},
-		{http.StatusUnauthorized, "UNAUTHORIZED"},
-		{http.StatusForbidden, "FORBIDDEN"},
-		{http.StatusNotFound, "NOT_FOUND"},
-		{http.StatusConflict, "CONFLICT"},
-		{http.StatusGone, "GONE"},
-		{http.StatusPaymentRequired, "PAYMENT_REQUIRED"},
-		{http.StatusUnprocessableEntity, "VALIDATION_ERROR"},
-		{http.StatusTooManyRequests, "RATE_LIMIT_EXCEEDED"},
-		{http.StatusServiceUnavailable, "SERVICE_UNAVAILABLE"},
-		{http.StatusInternalServerError, "INTERNAL_ERROR"},
-		{999, "INTERNAL_ERROR"},
+		{http.StatusBadRequest, CodeBadRequest},
+		{http.StatusUnauthorized, CodeUnauthorized},
+		{http.StatusForbidden, CodeForbidden},
+		{http.StatusNotFound, CodeNotFound},
+		{http.StatusConflict, CodeConflict},
+		{http.StatusGone, CodeGone},
+		{http.StatusPaymentRequired, CodePaymentRequired},
+		{http.StatusUnprocessableEntity, CodeValidationError},
+		{http.StatusTooManyRequests, CodeRateLimitExceeded},
+		{http.StatusServiceUnavailable, CodeServiceUnavailable},
+		{http.StatusInternalServerError, CodeInternalError},
+		{999, CodeInternalError},
 	}
 	for _, tt := range tests {
 		got := CodeFromStatus(tt.status)
@@ -70,8 +70,8 @@ func TestNewValidationErrorf(t *testing.T) {
 	if err.HTTPStatus() != http.StatusBadRequest {
 		t.Errorf("HTTPStatus() = %d, want %d", err.HTTPStatus(), http.StatusBadRequest)
 	}
-	if err.GetCode() != "VALIDATION_ERROR" {
-		t.Errorf("GetCode() = %q, want VALIDATION_ERROR", err.GetCode())
+	if err.GetCode() != CodeValidationError {
+		t.Errorf("GetCode() = %q, want %q", err.GetCode(), CodeValidationError)
 	}
 	if err.Error() == "" {
 		t.Error("Error() should not be empty")
@@ -86,7 +86,7 @@ func TestIsExpectedClientError(t *testing.T) {
 	if !IsExpectedClientError(ErrInvalidID()) {
 		t.Error("ErrInvalidID (4xx) should be reported as expected client error")
 	}
-	err := New(errors.New("x"), http.StatusNotFound, "NOT_FOUND")
+	err := New(errors.New("x"), http.StatusNotFound, CodeNotFound)
 	if !IsExpectedClientError(err) {
 		t.Error("4xx HTTPError should be expected client error")
 	}
@@ -104,13 +104,13 @@ func TestSentinels_StatusCodeAndCode(t *testing.T) {
 		wantStatus int
 		wantCode   string
 	}{
-		{"ErrForbidden", ErrForbidden(), http.StatusForbidden, "FORBIDDEN"},
-		{"ErrNotFound", ErrNotFound(), http.StatusNotFound, "NOT_FOUND"},
-		{"ErrConflict", ErrConflict(), http.StatusConflict, "CONFLICT"},
-		{"ErrGone", ErrGone(), http.StatusGone, "GONE"},
-		{"ErrUnprocessableEntity", ErrUnprocessableEntity(), http.StatusUnprocessableEntity, "VALIDATION_ERROR"},
-		{"ErrTooManyRequests", ErrTooManyRequests(), http.StatusTooManyRequests, "RATE_LIMIT_EXCEEDED"},
-		{"ErrServiceUnavailable", ErrServiceUnavailable(), http.StatusServiceUnavailable, "SERVICE_UNAVAILABLE"},
+		{"ErrForbidden", ErrForbidden(), http.StatusForbidden, CodeForbidden},
+		{"ErrNotFound", ErrNotFound(), http.StatusNotFound, CodeNotFound},
+		{"ErrConflict", ErrConflict(), http.StatusConflict, CodeConflict},
+		{"ErrGone", ErrGone(), http.StatusGone, CodeGone},
+		{"ErrUnprocessableEntity", ErrUnprocessableEntity(), http.StatusUnprocessableEntity, CodeValidationError},
+		{"ErrTooManyRequests", ErrTooManyRequests(), http.StatusTooManyRequests, CodeRateLimitExceeded},
+		{"ErrServiceUnavailable", ErrServiceUnavailable(), http.StatusServiceUnavailable, CodeServiceUnavailable},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

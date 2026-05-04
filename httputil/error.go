@@ -99,8 +99,7 @@ func HandleError(w http.ResponseWriter, r *http.Request, err error) {
 	if err == nil || w == nil || r == nil {
 		return
 	}
-	var valErr *ValidationHTTPError
-	if errors.As(err, &valErr) {
+	if valErr, ok := errors.AsType[*ValidationHTTPError](err); ok {
 		if valErr.HTTPError == nil {
 			render.Status(r, http.StatusInternalServerError)
 			render.JSON(w, r, ErrorResponse{Code: httperr.CodeFromStatus(http.StatusInternalServerError), Message: msgInternalServerError})
@@ -109,13 +108,12 @@ func HandleError(w http.ResponseWriter, r *http.Request, err error) {
 		render.Status(r, valErr.HTTPStatus())
 		render.JSON(w, r, ValidationErrorResponse{
 			Code:    valErr.GetCode(),
-			Message: "Validation failed",
+			Message: msgValidationFailed,
 			Errors:  valErr.Errors,
 		})
 		return
 	}
-	var httpErr *httperr.HTTPError
-	if errors.As(err, &httpErr) {
+	if httpErr, ok := errors.AsType[*httperr.HTTPError](err); ok {
 		code := httpErr.GetCode()
 		if code == "" {
 			code = httperr.CodeFromStatus(httpErr.HTTPStatus())
