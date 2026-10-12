@@ -2,7 +2,6 @@ package httputil
 
 import (
 	"context"
-	"encoding/json"
 	"maps"
 	"net/http"
 	"sync"
@@ -79,7 +78,7 @@ func HealthHandler(checkers map[string]Checker, opts ...HealthHandlerOption) htt
 		if !o.hideDetails {
 			body["checks"] = results
 		}
-		enc, encErr := json.Marshal(body)
+		enc, encErr := marshalJSON(body)
 		if encErr != nil {
 			if o.onEncodeError != nil {
 				o.onEncodeError(encErr)

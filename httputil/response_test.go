@@ -1,12 +1,13 @@
 package httputil
 
 import (
-	"encoding/json"
+	"encoding/json/v2"
 	"math"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestRenderJSON(t *testing.T) {
@@ -18,7 +19,7 @@ func TestRenderJSON(t *testing.T) {
 		t.Errorf("status = %d, want 200", w.Code)
 	}
 	var body map[string]string
-	if err := json.NewDecoder(w.Body).Decode(&body); err != nil {
+	if err := json.Unmarshal(w.Body.Bytes(), &body); err != nil {
 		t.Fatalf("decode: %v", err)
 	}
 	if body["k"] != "v" {
@@ -41,6 +42,61 @@ func TestRenderJSON_ContentTypeAndEscapesHTML(t *testing.T) {
 	}
 }
 
+func TestRenderJSON_EscapesJavaScriptSeparators(t *testing.T) {
+	t.Parallel()
+	w := httptest.NewRecorder()
+	r := httptest.NewRequest(http.MethodGet, "/", http.NoBody)
+
+	RenderJSON(w, r, http.StatusOK, map[string]string{"separators": "\u2028\u2029"})
+
+	if got, want := w.Body.String(), `{"separators":"\u2028\u2029"}`+"\n"; got != want {
+		t.Errorf("body = %q, want %q", got, want)
+	}
+}
+
+func TestRenderJSON_PreservesJSONWireFormat(t *testing.T) {
+	t.Parallel()
+	w := httptest.NewRecorder()
+	data := struct {
+		Values   []string          `json:"values"`
+		Lookup   map[string]string `json:"lookup"`
+		Duration time.Duration     `json:"duration"`
+	}{Duration: 1234567890}
+
+	RenderJSON(w, httptest.NewRequest(http.MethodGet, "/", http.NoBody), http.StatusOK, data)
+
+	if got, want := w.Body.String(), `{"values":null,"lookup":null,"duration":1234567890}`+"\n"; got != want {
+		t.Errorf("body = %q, want %q", got, want)
+	}
+}
+
+func TestRenderJSON_SortsMapKeys(t *testing.T) {
+	t.Parallel()
+	w := httptest.NewRecorder()
+	data := map[string]int{"z": 1, "a": 2}
+
+	RenderJSON(w, httptest.NewRequest(http.MethodGet, "/", http.NoBody), http.StatusOK, data)
+
+	if got, want := w.Body.String(), "{\"a\":2,\"z\":1}\n"; got != want {
+		t.Errorf("body = %q, want %q", got, want)
+	}
+}
+
+func TestRenderJSON_OmitEmptyUsesJSONV2Semantics(t *testing.T) {
+	t.Parallel()
+	w := httptest.NewRecorder()
+	data := struct {
+		Count   int  `json:"count,omitempty"`
+		Enabled bool `json:"enabled,omitempty"`
+	}{}
+
+	RenderJSON(w, httptest.NewRequest(http.MethodGet, "/", http.NoBody), http.StatusOK, data)
+
+	if got, want := w.Body.String(), "{\"count\":0,\"enabled\":false}\n"; got != want {
+		t.Errorf("body = %q, want %q", got, want)
+	}
+}
+
 func TestRenderJSON_EncodeErrorHidesDetails(t *testing.T) {
 	t.Parallel()
 	w := httptest.NewRecorder()
@@ -58,7 +114,7 @@ func TestRenderJSON_EncodeErrorHidesDetails(t *testing.T) {
 		t.Errorf("body leaked encode error details: %q", w.Body.String())
 	}
 	var body ErrorResponse
-	if err := json.NewDecoder(w.Body).Decode(&body); err != nil {
+	if err := json.Unmarshal(w.Body.Bytes(), &body); err != nil {
 		t.Fatalf("decode: %v", err)
 	}
 	if body.Code != "INTERNAL_ERROR" || body.Message != msgInternalServerError {
@@ -88,7 +144,7 @@ func TestRenderCreated(t *testing.T) {
 		t.Errorf("status = %d, want 201", w.Code)
 	}
 	var body map[string]int
-	if err := json.NewDecoder(w.Body).Decode(&body); err != nil {
+	if err := json.Unmarshal(w.Body.Bytes(), &body); err != nil {
 		t.Fatalf("decode: %v", err)
 	}
 	if body["id"] != 1 {
@@ -105,7 +161,7 @@ func TestRenderAccepted(t *testing.T) {
 		t.Errorf("status = %d, want 202", w.Code)
 	}
 	var body map[string]string
-	if err := json.NewDecoder(w.Body).Decode(&body); err != nil {
+	if err := json.Unmarshal(w.Body.Bytes(), &body); err != nil {
 		t.Fatalf("decode: %v", err)
 	}
 	if body["task"] != "queued" {
@@ -122,7 +178,7 @@ func TestRenderOK(t *testing.T) {
 		t.Errorf("status = %d, want 200", w.Code)
 	}
 	var body string
-	if err := json.NewDecoder(w.Body).Decode(&body); err != nil {
+	if err := json.Unmarshal(w.Body.Bytes(), &body); err != nil {
 		t.Fatalf("decode: %v", err)
 	}
 	if body != "ok" {
@@ -139,7 +195,7 @@ func TestRenderError(t *testing.T) {
 		t.Errorf("status = %d, want 400", w.Code)
 	}
 	var body ErrorResponse
-	if err := json.NewDecoder(w.Body).Decode(&body); err != nil {
+	if err := json.Unmarshal(w.Body.Bytes(), &body); err != nil {
 		t.Fatalf("decode: %v", err)
 	}
 	if body.Code != "BAD_REQUEST" {
@@ -159,7 +215,7 @@ func TestRenderErrorWithCode(t *testing.T) {
 		t.Errorf("status = %d, want 403", w.Code)
 	}
 	var body ErrorResponse
-	if err := json.NewDecoder(w.Body).Decode(&body); err != nil {
+	if err := json.Unmarshal(w.Body.Bytes(), &body); err != nil {
 		t.Fatalf("decode: %v", err)
 	}
 	if body.Code != "CUSTOM_DENIED" {
@@ -179,7 +235,7 @@ func TestRenderInvalidID(t *testing.T) {
 		t.Errorf("status = %d, want 400", w.Code)
 	}
 	var body ErrorResponse
-	if err := json.NewDecoder(w.Body).Decode(&body); err != nil {
+	if err := json.Unmarshal(w.Body.Bytes(), &body); err != nil {
 		t.Fatalf("decode: %v", err)
 	}
 	if body.Code != "INVALID_ID" {

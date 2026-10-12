@@ -2,7 +2,6 @@ package httputil
 
 import (
 	"bytes"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -61,11 +60,18 @@ func sanitizeContentDispositionFilename(name string) string {
 // RenderJSONAttachment encodes data as JSON and writes it with Content-Disposition attachment and sanitized filename
 func RenderJSONAttachment[T any](w http.ResponseWriter, data T, filename string) error {
 	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(data); err != nil {
+	raw, err := marshalJSON(data)
+	if err != nil {
+		return fmt.Errorf("encode json attachment: %w", err)
+	}
+	if _, err := buf.Write(raw); err != nil {
+		return fmt.Errorf("encode json attachment: %w", err)
+	}
+	if err := buf.WriteByte('\n'); err != nil {
 		return fmt.Errorf("encode json attachment: %w", err)
 	}
 	writeAttachmentHeaders(w, "application/json; charset=utf-8", filename)
-	_, err := w.Write(buf.Bytes())
+	_, err = w.Write(buf.Bytes())
 	return err
 }
 

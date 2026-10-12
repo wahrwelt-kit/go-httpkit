@@ -3,7 +3,7 @@ package httputil
 import (
 	"bytes"
 	"context"
-	"encoding/json"
+	"encoding/json/v2"
 	"errors"
 	"log/slog"
 	"net/http"
@@ -26,7 +26,7 @@ func TestHandleError_HTTPError(t *testing.T) {
 		t.Errorf("status = %d, want %d", w.Code, http.StatusNotFound)
 	}
 	var body ErrorResponse
-	if err := json.NewDecoder(w.Body).Decode(&body); err != nil {
+	if err := json.Unmarshal(w.Body.Bytes(), &body); err != nil {
 		t.Fatalf("decode body: %v", err)
 	}
 	if body.Code != "NOT_FOUND" {
@@ -44,7 +44,7 @@ func TestHandleError_HTTPError_EmptyCodeUsesCodeFromStatus(t *testing.T) {
 	err := httperr.New(errors.New("bad"), http.StatusBadRequest, "")
 	HandleError(w, r, err)
 	var body ErrorResponse
-	if err := json.NewDecoder(w.Body).Decode(&body); err != nil {
+	if err := json.Unmarshal(w.Body.Bytes(), &body); err != nil {
 		t.Fatalf("decode body: %v", err)
 	}
 	if body.Code != "BAD_REQUEST" {
@@ -62,7 +62,7 @@ func TestHandleError_HTTPError_5xxHidesMessage(t *testing.T) {
 		t.Errorf("status = %d", w.Code)
 	}
 	var body ErrorResponse
-	if err := json.NewDecoder(w.Body).Decode(&body); err != nil {
+	if err := json.Unmarshal(w.Body.Bytes(), &body); err != nil {
 		t.Fatalf("decode body: %v", err)
 	}
 	if body.Message != msgInternalServerError {
@@ -79,7 +79,7 @@ func TestHandleError_GenericError(t *testing.T) {
 		t.Errorf("status = %d, want 500", w.Code)
 	}
 	var body ErrorResponse
-	if err := json.NewDecoder(w.Body).Decode(&body); err != nil {
+	if err := json.Unmarshal(w.Body.Bytes(), &body); err != nil {
 		t.Fatalf("decode body: %v", err)
 	}
 	if body.Code != "INTERNAL_ERROR" {
@@ -97,7 +97,7 @@ func TestHandleError_ContextDeadlineExceeded(t *testing.T) {
 	HandleError(w, r, context.DeadlineExceeded)
 	assert.Equal(t, http.StatusServiceUnavailable, w.Code)
 	var body ErrorResponse
-	require.NoError(t, json.NewDecoder(w.Body).Decode(&body))
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &body))
 	assert.Equal(t, httperr.CodeTimeout, body.Code)
 	assert.Equal(t, "request timeout", body.Message)
 }
@@ -115,7 +115,7 @@ func TestHandleError_ValidationHTTPError(t *testing.T) {
 	HandleError(w, r, err)
 	assert.Equal(t, http.StatusBadRequest, w.Code)
 	var body ValidationErrorResponse
-	require.NoError(t, json.NewDecoder(w.Body).Decode(&body))
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &body))
 	assert.Equal(t, "VALIDATION_ERROR", body.Code)
 	assert.Equal(t, "Validation failed", body.Message)
 	require.Len(t, body.Errors, 1)
@@ -131,7 +131,7 @@ func TestHandleError_ValidationHTTPError_NilHTTPError(t *testing.T) {
 	HandleError(w, r, err)
 	assert.Equal(t, http.StatusInternalServerError, w.Code)
 	var body ErrorResponse
-	require.NoError(t, json.NewDecoder(w.Body).Decode(&body))
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &body))
 	assert.Equal(t, "INTERNAL_ERROR", body.Code)
 }
 

@@ -33,6 +33,9 @@ func TestRenderJSONAttachment(t *testing.T) {
 	if body != `{"a":1}` {
 		t.Errorf("body = %q", body)
 	}
+	if !strings.HasSuffix(w.Body.String(), "\n") {
+		t.Errorf("body = %q, want trailing newline", w.Body.String())
+	}
 }
 
 func TestRenderJSONAttachment_FilenameSanitized(t *testing.T) {

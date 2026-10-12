@@ -8,6 +8,8 @@ HTTP helpers for JSON APIs: errors, responses, decoding, validation, pagination,
 
 ## Install
 
+Requires Go 1.27.2 or later.
+
 ```bash
 go get github.com/wahrwelt-kit/go-httpkit
 go get github.com/wahrwelt-kit/go-httpkit/metrics github.com/wahrwelt-kit/go-httpkit/localization
@@ -48,6 +50,8 @@ HTTP-aware errors: HTTPError (Err, StatusCode, Code, IsExpected), New, CodeFromS
 - **SSE**: SSEWriter, NewSSEWriter, NewSSEWriterWithLimit(MaxEventBytes), Send, SendJSON, Close, Heartbeat
 - **Health**: Checker, HealthHandler(checkers, HealthTimeout, HealthHideDetails) -> JSON status and checks
 
+JSON request decoding uses Go's `encoding/json/v2`. It matches field names case-insensitively and rejects unknown or duplicate members, invalid UTF-8, trailing data, and bodies over the configured limit. Response helpers keep nil maps and slices as `null`, sort map keys, escape HTML, and retain their existing newline behavior. `time.Duration` values remain nanosecond integers. Since v2 defines `omitempty` by the encoded JSON value, use `omitzero` for zero scalar fields that should be omitted.
+
 ### httputil/middleware
 
 - **Logger(log, cidrs, opts...)**: request logging via `*slog.Logger`; WithRedactedParams to add sensitive query params; WithSkipPaths to suppress health/metrics noise
@@ -61,6 +65,9 @@ HTTP-aware errors: HTTPError (Err, StatusCode, Code, IsExpected), New, CodeFromS
 ### metrics
 
 Prometheus middleware: request count, duration, and optional in-flight gauge. Pass a stable route-pattern function for the path label; options include logger, namespace, subsystem, buckets, and const labels.
+
+Standard HTTP methods keep their metric labels; extension methods share `unknown`.
+The original request method still reaches the handler unchanged.
 
 ### localization
 

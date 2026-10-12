@@ -1,7 +1,9 @@
 package httputil
 
 import (
-	"encoding/json"
+	"bytes"
+	"encoding/json/jsontext"
+	"encoding/json/v2"
 	"errors"
 	"io"
 	"net/http"
@@ -67,8 +69,8 @@ type Validator interface {
 	Validate(any) error
 }
 
-func hasTrailingJSONData(limited io.Reader, dec *json.Decoder) (bool, error) {
-	r := io.MultiReader(dec.Buffered(), limited)
+func hasTrailingJSONData(limited io.Reader, dec *jsontext.Decoder) (bool, error) {
+	r := io.MultiReader(bytes.NewReader(dec.UnreadBuffer()), limited)
 	buf := make([]byte, 512)
 	for {
 		n, err := r.Read(buf)
@@ -103,9 +105,13 @@ func decodeJSONBody[T any](r *http.Request, opts []DecodeOption) (T, *decodeErro
 	}
 	hitLimit := false
 	limited := &limitTrackingReader{r: r.Body, limit: cfg.maxBodySize + 1, hitLimit: &hitLimit}
-	dec := json.NewDecoder(limited)
-	dec.DisallowUnknownFields()
-	if err := dec.Decode(&req); err != nil {
+	dec := jsontext.NewDecoder(limited)
+	err := json.UnmarshalDecode(dec, &req,
+		json.RejectUnknownMembers(true),
+		json.MatchCaseInsensitiveNames(true),
+		json.WithUnmarshalers(durationJSONUnmarshalers),
+	)
+	if err != nil {
 		if _, ok := errors.AsType[*http.MaxBytesError](err); ok {
 			return req, &decodeError{kind: decodeErrorBodyTooLarge, err: ErrRequestBodyTooLarge}
 		}

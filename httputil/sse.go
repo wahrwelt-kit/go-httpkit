@@ -2,7 +2,6 @@ package httputil
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"net/http"
 	"strings"
@@ -132,7 +131,7 @@ func (s *SSEWriter) SendJSON(event string, v any) error {
 	if s.done.Load() {
 		return ErrSSEClosed
 	}
-	raw, err := json.Marshal(v)
+	raw, err := marshalJSON(v)
 	if err != nil {
 		return err
 	}

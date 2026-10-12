@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	playvalidator "github.com/go-playground/validator/v10"
 	"github.com/stretchr/testify/assert"
@@ -253,6 +254,54 @@ func TestDecodeJSON_Success(t *testing.T) {
 	assert.Equal(t, 10, out.X)
 }
 
+func TestDecodeJSON_MatchesFieldNamesCaseInsensitively(t *testing.T) {
+	t.Parallel()
+	r := httptest.NewRequest(http.MethodPost, "/", bytes.NewReader([]byte(`{"X":"value"}`)))
+	var out struct {
+		X string `json:"x"`
+	}
+
+	require.NoError(t, DecodeJSON(r, &out))
+	assert.Equal(t, "value", out.X)
+}
+
+func TestDecodeJSON_RejectsInvalidAndAmbiguousMembers(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name string
+		body []byte
+	}{
+		{name: "unknown member", body: []byte(`{"x":"value","extra":true}`)},
+		{name: "duplicate member", body: []byte(`{"x":"first","x":"second"}`)},
+		{name: "case-insensitive duplicate member", body: []byte(`{"x":"first","X":"second"}`)},
+		{name: "invalid UTF-8", body: []byte{'{', '"', 'x', '"', ':', '"', 0xff, '"', '}'}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			r := httptest.NewRequest(http.MethodPost, "/", bytes.NewReader(tt.body))
+			var out struct {
+				X string `json:"x"`
+			}
+
+			err := DecodeJSON(r, &out)
+			require.Error(t, err)
+			assert.NotErrorIs(t, err, ErrRequestBodyTooLarge)
+		})
+	}
+}
+
+func TestDecodeJSON_TimeDurationUsesNanoseconds(t *testing.T) {
+	t.Parallel()
+	r := httptest.NewRequest(http.MethodPost, "/", bytes.NewReader([]byte(`{"timeout":1234567890}`)))
+	var out struct {
+		Timeout time.Duration `json:"timeout"`
+	}
+
+	require.NoError(t, DecodeJSON(r, &out))
+	assert.Equal(t, time.Duration(1234567890), out.Timeout)
+}
+
 func TestDecodeJSON_InvalidJSON(t *testing.T) {
 	t.Parallel()
 	r := httptest.NewRequest(http.MethodPost, "/", bytes.NewReader([]byte("not json")))
@@ -282,6 +331,17 @@ func TestDecodeJSON_TrailingData(t *testing.T) {
 	err := DecodeJSON(r, &out)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "trailing")
+}
+
+func TestDecodeJSON_BodyLimitPrecedesTrailingData(t *testing.T) {
+	t.Parallel()
+	r := httptest.NewRequest(http.MethodPost, "/", bytes.NewReader([]byte(`{"x":1} trailing`)))
+	var out struct {
+		X int `json:"x"`
+	}
+
+	err := DecodeJSON(r, &out, WithMaxBodySize(7))
+	require.ErrorIs(t, err, ErrRequestBodyTooLarge)
 }
 
 func TestDecodeJSON_AllowsTrailingWhitespace(t *testing.T) {

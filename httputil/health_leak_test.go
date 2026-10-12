@@ -2,7 +2,7 @@ package httputil
 
 import (
 	"bytes"
-	"encoding/json"
+	"encoding/json/v2"
 	"net/http"
 	"net/http/httptest"
 	"runtime"
@@ -11,7 +11,7 @@ import (
 )
 
 func TestHealthHandler_NoGoroutineLeaks(t *testing.T) {
-	profile := goroutineLeakProfileOrSkip(t)
+	profile := goroutineLeakProfile(t)
 	handler := HealthHandler(map[string]Checker{
 		"db": okChecker{},
 	})
@@ -30,11 +30,11 @@ func TestHealthHandler_NoGoroutineLeaks(t *testing.T) {
 	assertNoGoroutineLeaks(t, profile)
 }
 
-func goroutineLeakProfileOrSkip(t *testing.T) *pprof.Profile {
+func goroutineLeakProfile(t *testing.T) *pprof.Profile {
 	t.Helper()
 	profile := pprof.Lookup("goroutineleak")
 	if profile == nil {
-		t.Skip("goroutineleak profile requires GOEXPERIMENT=goroutineleakprofile")
+		t.Fatal("goroutineleak profile is unavailable")
 	}
 	return profile
 }

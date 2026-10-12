@@ -132,7 +132,7 @@ func Middleware(reg prometheus.Registerer, pathFromRequest PathFromRequest, opts
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			start := time.Now()
-			method := r.Method
+			method := metricMethod(r.Method)
 			inFlightPath := metricPath(r, pathFromRequest, 0)
 			if cfg.withInFlight {
 				if !addGaugeVec(requestsInFlight, 1, method, inFlightPath) && cfg.logger != nil {
@@ -160,6 +160,17 @@ func Middleware(reg prometheus.Registerer, pathFromRequest PathFromRequest, opts
 				})
 			}
 		})
+	}
+}
+
+// Extension methods share one label to keep rejected requests from growing metrics without bound.
+func metricMethod(method string) string {
+	switch method {
+	case http.MethodGet, http.MethodHead, http.MethodPost, http.MethodPut,
+		http.MethodDelete, http.MethodConnect, http.MethodOptions, http.MethodTrace, http.MethodPatch:
+		return method
+	default:
+		return "unknown"
 	}
 }
 

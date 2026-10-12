@@ -2,7 +2,7 @@ package localization
 
 import (
 	"context"
-	"encoding/json"
+	"encoding/json/v2"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -20,7 +20,9 @@ const testMsgGreeting = "greeting"
 func newTestBundle(t *testing.T) *i18n.Bundle {
 	t.Helper()
 	b := i18n.NewBundle(language.English)
-	b.RegisterUnmarshalFunc("json", json.Unmarshal)
+	b.RegisterUnmarshalFunc("json", func(data []byte, value any) error {
+		return json.Unmarshal(data, value)
+	})
 	_, err := b.ParseMessageFileBytes(
 		[]byte(`{"greeting":"Hello","farewell":"Goodbye"}`),
 		"en.json",
