@@ -1,11 +1,11 @@
 module github.com/wahrwelt-kit/go-httpkit/localization
 
-go 1.26.0
+go 1.27.2
 
 require (
 	github.com/nicksnyder/go-i18n/v2 v2.6.1
 	github.com/stretchr/testify v1.11.1
-	golang.org/x/text v0.38.0
+	golang.org/x/text v0.43.0
 )
 
 require (

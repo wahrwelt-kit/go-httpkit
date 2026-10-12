@@ -20,7 +20,7 @@ test-fuzz:
 	go test ./httputil/middleware -run '^$$' -fuzz=FuzzRequestID -fuzztime=$(FUZZTIME)
 
 test-leaks:
-	GOEXPERIMENT=goroutineleakprofile go test ./httputil ./httputil/middleware -run NoGoroutineLeaks
+	go test ./httputil ./httputil/middleware -run NoGoroutineLeaks
 
 fmt:
 	gofmt -w .
